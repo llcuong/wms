@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+[data-theme="light"]  {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+
+    --text-primary: #0b0c0f;
+    --text-secondary: #6b7280;
+
+    --color-primary: #155DFC;
+    --color-secondary: #e5e7eb;
+
+    --shadow-primary: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="black"] {
+    --bg-primary: #1d224a;
+    --bg-secondary: #090f33;
+
+    --text-primary: #ffffff;
+    --text-secondary: #ffffff;
+
+    --color-primary: #ffffff;
+    --color-secondary: #1d224a;
+
+    --shadow-primary: #131c47;
+}
