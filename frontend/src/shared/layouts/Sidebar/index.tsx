@@ -1,5 +1,6 @@
 import { ToggleButton } from "./ToggleButton";
 import { Body } from "./Body";
+import { Footer } from "./Footer";
 import { type SidebarProps } from "./BodyTop";
 
 export const Sidebar = ({ isSideBarOpen, setSideBarOpen, ...props }: SidebarProps) => {
@@ -23,13 +24,7 @@ export const Sidebar = ({ isSideBarOpen, setSideBarOpen, ...props }: SidebarProp
                 setSideBarOpen={setSideBarOpen}
             />
 
-            <div className="w-full flex justify-center">
-                <div className="w-10 h-0.5 bg-gray-200 rounded" />
-            </div>
-            <div className="h-10 w-full flex flex-col justify-center cursor-pointer">
-
-            </div>
-
+            <Footer/>
         </aside>
     );
 };
