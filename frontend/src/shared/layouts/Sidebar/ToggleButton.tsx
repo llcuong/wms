@@ -1,7 +1,4 @@
-interface Props {
-    isSideBarOpen: boolean;
-    toggleSidebar: () => void;
-}
+import type { Props } from "./types"
 
 export function ToggleButton({ isSideBarOpen, toggleSidebar }: Props) {
     return (

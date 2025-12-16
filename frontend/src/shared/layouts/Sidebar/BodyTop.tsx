@@ -1,11 +1,6 @@
 import { FC } from "react";
 import { APPS_CONFIG } from "@routes/configs";
-import type { PageNavigatorProps } from "@routes/types";
-
-export interface SidebarProps extends PageNavigatorProps {
-    isSideBarOpen: boolean;
-    setSideBarOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
-}
+import type { SidebarProps } from "./types";
 
 const BodyTop: FC<SidebarProps> = (props) => {
 

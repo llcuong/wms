@@ -1,7 +1,7 @@
 import { ToggleButton } from "./ToggleButton";
 import { Body } from "./Body";
 import { Footer } from "./Footer";
-import { type SidebarProps } from "./BodyTop";
+import type { SidebarProps } from "./types";
 
 export const Sidebar = ({ isSideBarOpen, setSideBarOpen, ...props }: SidebarProps) => {
     const toggleSidebar = () => setSideBarOpen((prev) => !prev);
