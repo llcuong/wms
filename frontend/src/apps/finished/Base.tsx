@@ -1,13 +1,15 @@
-import { Navbar, Sidebar } from "@Layouts";
+import { Navbar, Sidebar } from "@layouts";
+import { useSidebarState } from "@hooks"
 import { PageNavigatorProps } from "@routes/types";
-
-import { FC, ReactNode } from "react";
+import { FC, ReactNode, useEffect, useState } from "react";
 
 interface AppBaseProps extends PageNavigatorProps {
     children?: ReactNode;
 }
 
 export const Base: FC<AppBaseProps> = (props) => {
+    const {isSideBarOpen, setSideBarOpen, toggleSideBar } = useSidebarState();
+
     return (
         <>
             <Navbar>
@@ -22,9 +24,11 @@ export const Base: FC<AppBaseProps> = (props) => {
                 currentApp={props.currentApp}
                 navigateApp={props.navigateApp}
                 navigatePage={props.navigatePage}
+                isSideBarOpen={isSideBarOpen}
+                setSideBarOpen={setSideBarOpen}
             />
 
-            <main className="flex-1 pt-14 transition-all duration-300">
+            <main className={`flex-1 pt-14 transition-all duration-300 ${isSideBarOpen ? "ml-56" : "ml-14"}`}>
                 <div className="p-4">
                     {props.children}
                 </div>

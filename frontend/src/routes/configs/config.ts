@@ -3,9 +3,9 @@ import type { AppsConfig } from "@routes/types";
 import FormerIcon from "@icons/FormerIcon"
 import FinishedIcon from "@icons/FinishedIcon"
 import SemiFinishedIcon from "@icons/SemiFinishedIcon"
-import {Navigate as SemiFinishedNavigate} from "@semi-finished/Navigate"
-import {Navigate as FinishedNavigate} from "@finished/Navigate"
-import {Navigate as FormerNavigate} from "@former/Navigate"
+import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
+import { Navigate as FinishedNavigate } from "@finished/Navigate"
+import { Navigate as FormerNavigate } from "@former/Navigate"
 
 export const APPS_CONFIG: AppsConfig[] = [
     {

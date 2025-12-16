@@ -4,6 +4,7 @@ import type { PageNavigatorProps } from "@routes/types";
 
 export interface SidebarProps extends PageNavigatorProps {
     isSideBarOpen: boolean;
+    setSideBarOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
 }
 
 const BodyTop: FC<SidebarProps> = (props) => {
@@ -32,18 +33,17 @@ const BodyTop: FC<SidebarProps> = (props) => {
                             key={app.id}
                             type="button"
                             onClick={() => handleOnClick(app.id)}
-                            className={`w-full h-10 rounded-lg flex items-center transition-colors ${
-                                isActive
+                            className={`w-full h-10 rounded-lg flex items-center transition-colors ${isActive
                                     ? "text-(--bg-primary) bg-(--color-primary)"
                                     : "text-(--text-primary) hover:text-(--color-primary)"
-                            }`}
+                                }`}
                         >
-                            <div className="ml-2.5">
+                            <div className="ml-2">
                                 <Icon />
                             </div>
 
                             {props.isSideBarOpen && (
-                                <span className="font-medium overflow-hidden whitespace-nowrap ml-5 text-base">
+                                <span className="font-medium overflow-hidden whitespace-nowrap ml-2.5 text-base">
                                     {app.name}
                                 </span>
                             )}

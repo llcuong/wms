@@ -14,8 +14,9 @@ export default defineConfig({
 
             "@global/types": path.resolve(__dirname, "src/types"),
 
-            "@Layouts": path.resolve(__dirname, "src/layouts/index.ts"),
+            "@layouts": path.resolve(__dirname, "src/shared/layouts"),
             "@icons": path.resolve(__dirname, "src/shared/icons"),
+            "@hooks": path.resolve(__dirname, "src/shared/hooks"),
 
             "@former": path.resolve(__dirname, "src/apps/former"),
             "@semi-finished": path.resolve(__dirname, "src/apps/semi-finished"),

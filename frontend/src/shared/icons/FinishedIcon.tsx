@@ -3,7 +3,7 @@ import type { FC, SVGProps } from "react";
 const FinishedIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
     return (
         <svg
-            className="w-[22px] h-[22px] shrink-0"
+            className="w-6.5 h-6.5 shrink-0"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

@@ -29,30 +29,17 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": "./src",
     "paths": {
-      "@routes/configs": [
-        "routes/configs/index.ts"
-      ],
-      "@routes/navigation": [
-        "routes/navigation/index.ts"
-      ],
-      "@routes/utils": [
-        "routes/utils/index.ts"
-      ],
-      "@routes/types": [
-        "routes/types/index.ts"
-      ],
-      "@global/types": [
-        "types/global.types.ts"
-      ],
-      "@Layouts": [
-        "layouts/index.ts"
-      ],
-      "@icons/*": [
-        "shared/icons/*"
-      ],
-      "@semi-finished/*": [
-        "apps/semi-finished/*"
-      ]
+      "@routes/configs": ["routes/configs/index.ts"],
+      "@routes/navigation": ["routes/navigation/index.ts"],
+      "@routes/utils": ["routes/utils/index.ts"],
+      "@routes/types": ["routes/types/index.ts"],
+      "@global/types": ["types/global.types.ts"],
+      "@layouts": ["shared/layouts/index.ts"],
+      "@hooks": ["shared/hooks/index.ts"],
+      "@icons/*": ["shared/icons/*"],
+      "@former/*": ["apps/former/*"],
+      "@semi-finished/*": ["apps/semi-finished/*"],
+      "@finished/*": ["apps/finished/*"]
     }
   },
   "include": [

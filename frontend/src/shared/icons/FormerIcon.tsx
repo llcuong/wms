@@ -3,7 +3,7 @@ import type { FC, SVGProps } from "react";
 const FormerIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
     return (
         <svg
-            className="w-[22px] h-[22px] shrink-0"
+            className="w-6.5 h-6.5 shrink-0"
             viewBox="0 0 746.279 746.279"
             fill="currentColor"
             {...props}

@@ -1,7 +1,7 @@
 import { FC } from "react";
-import BodyTop,  { type SidebarProps } from "./BodyTop";
+import BodyTop, { type SidebarProps } from "./BodyTop";
 
-const SidebarLeftBody: FC<SidebarProps> = (props) => {
+export const Body: FC<SidebarProps> = (props) => {
     return (
         <div className="flex-1 w-full flex flex-col">
             <BodyTop
@@ -9,9 +9,8 @@ const SidebarLeftBody: FC<SidebarProps> = (props) => {
                 navigateApp={props.navigateApp}
                 navigatePage={props.navigatePage}
                 isSideBarOpen={props.isSideBarOpen}
+                setSideBarOpen={props.setSideBarOpen}
             />
         </div>
     );
 };
-
-export default SidebarLeftBody;

@@ -1,10 +1,8 @@
-import { useState } from "react";
 import { ToggleButton } from "./ToggleButton";
-import Body from "./Body";
-import { type PageNavigatorProps } from "@routes/types";
+import { Body } from "./Body";
+import { type SidebarProps } from "./BodyTop";
 
-export const Sidebar = (props: PageNavigatorProps) => {
-    const [isSideBarOpen, setSideBarOpen] = useState(false);
+export const Sidebar = ({ isSideBarOpen, setSideBarOpen, ...props }: SidebarProps) => {
     const toggleSidebar = () => setSideBarOpen((prev) => !prev);
 
     return (
@@ -22,7 +20,16 @@ export const Sidebar = (props: PageNavigatorProps) => {
                 navigateApp={props.navigateApp}
                 navigatePage={props.navigatePage}
                 isSideBarOpen={isSideBarOpen}
+                setSideBarOpen={setSideBarOpen}
             />
+
+            <div className="w-full flex justify-center">
+                <div className="w-10 h-0.5 bg-gray-200 rounded" />
+            </div>
+            <div className="h-10 w-full flex flex-col justify-center cursor-pointer">
+
+            </div>
+
         </aside>
     );
 };
