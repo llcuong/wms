@@ -1,21 +1,24 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import {useAppNavigation} from "@routes/navigation";
-import {APPS_MAP} from "@routes/configs";
+import { useAppNavigation } from "@routes/navigation";
+import { APPS_MAP } from "@routes/configs";
+import { Protected } from "@modules/Protected";
 import "./global.css"
 
 const Main: React.FC = () => {
     const { currentApp, navigateApp } = useAppNavigation();
 
-    const CurrentComponent = APPS_MAP[currentApp];
+    const CurrentApp = APPS_MAP[currentApp];
 
-    if (!CurrentComponent) return null;
+    if (!CurrentApp) return null;
 
     return (
-        <CurrentComponent
-            navigateApp={navigateApp}
-            currentApp={currentApp}
-        />
+        <Protected>
+            <CurrentApp
+                navigateApp={navigateApp}
+                currentApp={currentApp}
+            />
+        </Protected>
     );
 };
 

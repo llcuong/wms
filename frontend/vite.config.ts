@@ -17,6 +17,9 @@ export default defineConfig({
             "@layouts": path.resolve(__dirname, "src/shared/layouts"),
             "@icons": path.resolve(__dirname, "src/shared/icons"),
             "@hooks": path.resolve(__dirname, "src/shared/hooks"),
+            "@components": path.resolve(__dirname, "src/shared/components"),
+            "@modules": path.resolve(__dirname, "src/shared/modules"),
+            "@store": path.resolve(__dirname, "src/shared/stores"),
 
             "@former": path.resolve(__dirname, "src/apps/former"),
             "@semi-finished": path.resolve(__dirname, "src/apps/semi-finished"),

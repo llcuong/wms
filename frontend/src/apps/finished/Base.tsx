@@ -2,13 +2,14 @@ import { Navbar, Sidebar } from "@layouts";
 import { useSidebarState } from "@hooks"
 import { PageNavigatorProps } from "@routes/types";
 import { FC, ReactNode, useEffect, useState } from "react";
+import { UserMenu } from "@components/UserMenu";
 
 interface AppBaseProps extends PageNavigatorProps {
     children?: ReactNode;
 }
 
 export const Base: FC<AppBaseProps> = (props) => {
-    const {isSideBarOpen, setSideBarOpen, toggleSideBar } = useSidebarState();
+    const { isSideBarOpen, setSideBarOpen, toggleSideBar } = useSidebarState();
 
     return (
         <>
@@ -18,6 +19,9 @@ export const Base: FC<AppBaseProps> = (props) => {
                         Finished Goods
                     </span>
                 </Navbar.Left>
+                <Navbar.Right>
+                    <UserMenu />
+                </Navbar.Right>
             </Navbar>
 
             <Sidebar
