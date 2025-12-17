@@ -24,7 +24,10 @@ export const Sidebar = ({ isSideBarOpen, setSideBarOpen, ...props }: SidebarProp
                 setSideBarOpen={setSideBarOpen}
             />
 
-            <Footer/>
+            <Footer
+                toggleSidebar={toggleSidebar}
+                isSideBarOpen={isSideBarOpen}
+            />
         </aside>
     );
 };

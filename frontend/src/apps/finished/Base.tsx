@@ -1,8 +1,7 @@
-import { Navbar, Sidebar } from "@layouts";
+import { Navbar, Sidebar, UserMenu } from "@layouts";
 import { useSidebarState } from "@hooks"
 import { PageNavigatorProps } from "@routes/types";
 import { FC, ReactNode, useEffect, useState } from "react";
-import { UserMenu } from "@components/UserMenu";
 
 interface AppBaseProps extends PageNavigatorProps {
     children?: ReactNode;

@@ -9,7 +9,6 @@ export const Login: FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Lấy hàm login từ Zustand store
     const login = useAuthStore((state) => state.login);
 
     const handleSubmit = async (e: FormEvent) => {
@@ -18,24 +17,21 @@ export const Login: FC = () => {
         setIsLoading(true);
 
         try {
-            // Call the real API
             const response = await authAPI.login({
                 account_id: username,
                 password: password
             });
 
-            // Login successful - update auth store
             login({
                 id: response.user_id,
                 username: response.account_id,
                 name: response.user_name,
-                role: 'user', // You can add role to backend response if needed
+                role: 'user',
                 fullName: response.user_full_name,
                 email: response.user_email
             }, response.token);
 
         } catch (err: any) {
-            // Handle API errors
             if (err.message) {
                 setError(err.message);
             } else {
@@ -48,18 +44,14 @@ export const Login: FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700">
-            {/* Animated Background Elements */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
                 <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
             </div>
 
-            {/* Login Card */}
             <div className="relative z-10 w-full max-w-md mx-4">
-                {/* Glassmorphism Card */}
                 <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 md:p-10 transform transition-all duration-500 hover:scale-[1.02]">
-                    {/* Header */}
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-400 to-blue-500 rounded-2xl mb-4 shadow-lg transform transition-transform hover:rotate-12 duration-300">
                             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,9 +64,7 @@ export const Login: FC = () => {
                         <p className="text-blue-100 text-sm font-medium">Warehouse Management System</p>
                     </div>
 
-                    {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Username Input */}
                         <div className="group">
                             <label
                                 htmlFor="username"
@@ -101,7 +91,6 @@ export const Login: FC = () => {
                             </div>
                         </div>
 
-                        {/* Password Input */}
                         <div className="group">
                             <label
                                 htmlFor="password"

@@ -1,4 +1,4 @@
-import { Navbar, Sidebar } from "@layouts";
+import { Navbar, Sidebar, UserMenu } from "@layouts";
 import { useSidebarState } from "@hooks"
 import { PageNavigatorProps } from "@routes/types";
 import { FC, ReactNode, useEffect, useState } from "react";
@@ -18,6 +18,9 @@ export const Base: FC<AppBaseProps> = (props) => {
                         Formers
                     </span>
                 </Navbar.Left>
+                <Navbar.Right>
+                    <UserMenu />
+                </Navbar.Right>
             </Navbar>
 
             <Sidebar
