@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { useAuthStore } from "@modules/Login/useAuthStore";
+import { useAuthStore } from "@modules/Authentication/useAuthStore";
 
 export const UserMenu: FC = () => {
     const user = useAuthStore((state) => state.user);

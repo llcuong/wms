@@ -1,12 +1,13 @@
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-import secrets
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import UserAccount, UserCustomUsers
 from .serializers import LoginSerializer, LoginResponseSerializer
+from .tokens import get_tokens_for_user
 
 
 @api_view(['POST'])
@@ -68,8 +69,8 @@ def login_view(request):
             # Update last login
             user_account.update_last_login()
             
-            # Generate simple token (in production, use JWT or Django Rest Framework Token)
-            token = secrets.token_urlsafe(32)
+            # Generate JWT tokens using custom generator
+            tokens = get_tokens_for_user(user_account)
             
             # Prepare response
             response_data = {
@@ -78,7 +79,10 @@ def login_view(request):
                 'user_name': custom_user.user_name,
                 'user_full_name': custom_user.user_full_name,
                 'user_email': custom_user.user_email or '',
-                'token': token,
+                'access_token': tokens['access'],
+                'refresh_token': tokens['refresh'],
+                'token_type': 'Bearer',
+                'expires_in': 3600,  # 1 hour in seconds
                 'last_login': user_account.last_login
             }
             
@@ -103,11 +107,82 @@ def login_view(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def logout_view(request):
     """
     API endpoint for user logout
-    This is a placeholder. In production, invalidate the token here.
+    Blacklists the refresh token to prevent reuse
+    
+    Request body:
+    {
+        "refresh_token": "token_string"
+    }
     """
-    return Response({
-        'message': 'Logged out successfully'
-    }, status=status.HTTP_200_OK)
+    try:
+        refresh_token = request.data.get('refresh_token')
+        
+        if not refresh_token:
+            return Response({
+                'error': 'Refresh token required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Blacklist the refresh token
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        
+        return Response({
+            'message': 'Logged out successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': 'Invalid token',
+            'message': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def refresh_token_view(request):
+    """
+    API endpoint to refresh access token using refresh token
+    
+    Request body:
+    {
+        "refresh_token": "token_string"
+    }
+    
+    Response:
+    {
+        "access_token": "new_access_token",
+        "refresh_token": "new_refresh_token",
+        "token_type": "Bearer",
+        "expires_in": 3600
+    }
+    """
+    try:
+        refresh_token = request.data.get('refresh_token')
+        
+        if not refresh_token:
+            return Response({
+                'error': 'Refresh token required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create new tokens from refresh token
+        token = RefreshToken(refresh_token)
+        
+        # Get new access and refresh tokens
+        response_data = {
+            'access_token': str(token.access_token),
+            'refresh_token': str(token),  # New refresh token due to ROTATE_REFRESH_TOKENS
+            'token_type': 'Bearer',
+            'expires_in': 3600,  # 1 hour in seconds
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': 'Invalid or expired refresh token',
+            'message': str(e)
+        }, status=status.HTTP_401_UNAUTHORIZED)

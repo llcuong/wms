@@ -1,6 +1,6 @@
 import { FC, ReactNode } from "react";
-import { useAuthStore } from "@modules/Login/useAuthStore";
-import { Login } from "@modules/Login";
+import { useAuthStore } from "@modules/Authentication/useAuthStore";
+import { Login } from "@modules/Authentication";
 
 interface ProtectedProps {
     children: ReactNode;

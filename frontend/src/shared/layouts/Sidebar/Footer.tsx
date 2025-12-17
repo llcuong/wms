@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { useAuthStore } from "@modules/Login/useAuthStore";
+import { useAuthStore } from "@modules/Authentication/useAuthStore";
 import type { Props } from "./types"
 
 export function Footer({ isSideBarOpen, toggleSidebar }: Props) {
