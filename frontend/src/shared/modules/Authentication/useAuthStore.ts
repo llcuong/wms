@@ -1,13 +1,13 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
-interface User {
+export interface User {
     id: string;
     username: string;
     name: string;
-    role: string;
-    email?: string;
-    fullName?: string;
+    fullName: string;
+    email: string;
+    role?: string;
 }
 
 interface AuthState {
@@ -24,15 +24,19 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             token: null,
             isAuthenticated: false,
-            login: (user: User, token: string) => {
+
+            login: (user, token) => {
                 set({ user, token, isAuthenticated: true });
             },
+
             logout: () => {
                 set({ user: null, token: null, isAuthenticated: false });
+                localStorage.removeItem('auth-storage'); // Xóa sạch storage
             },
         }),
         {
             name: 'auth-storage',
+            storage: createJSONStorage(() => localStorage),
         }
     )
 );

@@ -2,7 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { useAppNavigation } from "@routes/navigation";
 import { APPS_MAP } from "@routes/configs";
-import { Protected } from "@modules/Protected";
+import { Protected } from "@modules/Authentication";
 import "./global.css"
 
 const Main: React.FC = () => {
