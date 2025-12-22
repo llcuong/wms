@@ -142,9 +142,9 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:10000",
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:10000",
+# ]
 
 
 # REST Framework Settings
