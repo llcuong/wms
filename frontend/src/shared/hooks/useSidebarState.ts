@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-
-const SIDEBAR_KEY = "__sidebar_state__";
+import { SIDEBAR_KEY } from "@routes/configs"
 
 export function useSidebarState(defaultValue = false) {
     const [isSideBarOpen, setSideBarOpen] = useState<boolean>(() => {

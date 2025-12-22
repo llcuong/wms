@@ -1,10 +1,7 @@
-import { FC, ReactNode } from "react";
+import { FC } from "react";
 import { useAuthStore } from "./useAuthStore";
 import { Login } from "./Login";
-
-interface ProtectedProps {
-    children: ReactNode;
-}
+import type { ProtectedProps } from "./types";
 
 export const Protected: FC<ProtectedProps> = ({ children }) => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);

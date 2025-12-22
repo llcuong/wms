@@ -1,14 +1,14 @@
 import { Navbar, Sidebar, UserMenu } from "@layouts";
 import { useSidebarState } from "@hooks"
 import { PageNavigatorProps } from "@routes/types";
-import { FC, ReactNode, useEffect, useState } from "react";
+import { FC, ReactNode } from "react";
 
 interface AppBaseProps extends PageNavigatorProps {
     children?: ReactNode;
 }
 
 export const Base: FC<AppBaseProps> = (props) => {
-    const {isSideBarOpen, setSideBarOpen, toggleSideBar } = useSidebarState();
+    const { isSideBarOpen, setSideBarOpen } = useSidebarState();
 
     return (
         <>

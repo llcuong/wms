@@ -1,19 +1,5 @@
 import axiosClient from '../api';
-
-export interface LoginRequest {
-    account_id: string;
-    password: string;
-}
-
-export interface LoginResponse {
-    user_id: string;
-    account_id: string;
-    user_name: string;
-    user_full_name: string;
-    user_email: string;
-    token: string;
-    last_login: string;
-}
+import type { LoginRequest, LoginResponse } from './types';
 
 export const authAPI = {
     login: async (credentials: LoginRequest): Promise<LoginResponse> => {

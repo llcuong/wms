@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuthStore } from '@modules/Authentication/useAuthStore';
+import { useAuthStore } from './Authentication/useAuthStore';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
 

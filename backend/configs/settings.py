@@ -128,13 +128,24 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
+CSRF_COOKIE_NAME = "csrftoken"
+SESSION_COOKIE_NAME = "sessionid"
+
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
+
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
+
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:10000",
-    "http://127.0.0.1:10000",
 ]
 
-CORS_ALLOW_CREDENTIALS = True
 
 # REST Framework Settings
 REST_FRAMEWORK = {
@@ -153,11 +164,11 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Access token hết hạn sau 1 giờ
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token hết hạn sau 7 ngày
-    'ROTATE_REFRESH_TOKENS': True,  # Tạo refresh token mới khi refresh
-    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist refresh token cũ
-    'UPDATE_LAST_LOGIN': False,  # Không tự động update last_login (ta sẽ tự làm)
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
     
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
