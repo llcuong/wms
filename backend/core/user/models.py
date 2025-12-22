@@ -46,7 +46,7 @@ class UserAccounts(models.Model):
 
     def update_last_login(self):
         self.last_login = timezone.now()
-        self.save(update_fields=['last_login'])
+        self.save(update_fields=['account_last_login'])
 
 
 class UserCustomUsers(models.Model):
