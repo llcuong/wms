@@ -13,7 +13,6 @@ def get_tokens_for_user(user_account):
     """
     refresh = RefreshToken()
     
-    # Add custom claims
     refresh['account_id'] = user_account.account_id
     refresh['user_id'] = user_account.user_id
     

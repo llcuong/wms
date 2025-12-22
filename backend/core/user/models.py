@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import check_password, make_password
 class UserStatus(models.Model):
     status_id = models.AutoField(primary_key=True)
     status_name = models.CharField(max_length=100)
+
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.IntegerField(null=False, blank=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -19,11 +20,12 @@ class UserStatus(models.Model):
 
 class UserAccounts(models.Model):
     user_id = models.CharField(max_length=20, unique=True)
-    account_id = models.CharField(max_length=255, unique=True)
+    account_id = models.CharField(max_length=255, unique=True, db_index=True)
     account_password = models.CharField(max_length=255)
-    last_login = models.DateTimeField(null=True, blank=True)
+    account_last_login = models.DateTimeField(null=True, blank=True)
+    account_role = models.ForeignKey("data_model.DmRoles", to_field='role_code', db_column='role_code', on_delete=models.PROTECT, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.IntegerField(null=False, blank=False)
+    created_by = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.IntegerField(null=True, blank=True)
 

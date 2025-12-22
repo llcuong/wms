@@ -6,7 +6,6 @@ class DmRoles(models.Model):
     role_code = models.CharField(max_length=50, unique=True)
     role_name = models.CharField(max_length=100)
     role_description = models.TextField(blank=True, null=True)
-    is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.IntegerField(null=False, blank=False)

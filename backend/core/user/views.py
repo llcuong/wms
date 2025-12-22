@@ -2,7 +2,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import UserAccounts, UserCustomUsers
@@ -14,7 +13,7 @@ from .tokens import get_tokens_for_user
 @permission_classes([AllowAny])
 def login_view(request):
     """    
-    Request body:
+    Request:
     {
         "account_id"
         "password"
@@ -44,7 +43,7 @@ def login_view(request):
     
     try:
         # Find user account
-        user_account = UserAccount.objects.get(account_id=account_id)
+        user_account = UserAccounts.objects.get(account_id=account_id)
         
         # Check password
         if not user_account.check_password(password):
@@ -92,7 +91,7 @@ def login_view(request):
                 'message': 'User profile not found. Please contact administrator.'
             }, status=status.HTTP_404_NOT_FOUND)
             
-    except UserAccount.DoesNotExist:
+    except UserAccounts.DoesNotExist:
         return Response({
             'error': 'Invalid credentials',
             'message': 'Incorrect username or password'
@@ -108,7 +107,7 @@ def login_view(request):
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     """
-    Request body:
+    Request:
     {
         "refresh_token": "token_string"
     }
