@@ -1,6 +1,6 @@
 import type { FC, SVGProps } from "react";
 
-const FinishedIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
+export const  FinishedIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
     return (
         <svg
             className="w-6.5 h-6.5 shrink-0"
@@ -13,5 +13,3 @@ const FinishedIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
         </svg>
     );
 };
-
-export default FinishedIcon;

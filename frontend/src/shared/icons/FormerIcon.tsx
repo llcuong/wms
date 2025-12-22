@@ -1,6 +1,6 @@
 import type { FC, SVGProps } from "react";
 
-const FormerIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
+export const FormerIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
     return (
         <svg
             className="w-6.5 h-6.5 shrink-0"
@@ -24,5 +24,3 @@ const FormerIcon: FC<SVGProps<SVGSVGElement>> = (props) => {
         </svg>
     );
 };
-
-export default FormerIcon;

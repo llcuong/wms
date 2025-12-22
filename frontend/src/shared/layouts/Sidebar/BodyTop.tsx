@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { APPS_CONFIG } from "@routes/configs";
+import { PUBLIC_CONFIGS } from "@routes/configs";
 import type { SidebarProps } from "./types";
 
 const BodyTop: FC<SidebarProps> = (props) => {
@@ -18,7 +18,7 @@ const BodyTop: FC<SidebarProps> = (props) => {
 
     return (
         <div className="flex-1 min-h-0 overflow-hidden px-1.5 pt-2 space-y-0.5">
-            {APPS_CONFIG
+            {PUBLIC_CONFIGS
                 .map((app) => {
                     const Icon = app.icon;
                     const isActive = props.currentApp === app.id;
@@ -29,8 +29,8 @@ const BodyTop: FC<SidebarProps> = (props) => {
                             type="button"
                             onClick={() => handleOnClick(app.id)}
                             className={`w-full h-10 rounded-lg flex items-center transition-colors ${isActive
-                                    ? "text-(--bg-primary) bg-(--color-primary)"
-                                    : "text-(--text-primary) hover:text-(--color-primary)"
+                                ? "text-(--bg-primary) bg-(--color-primary)"
+                                : "text-(--text-primary) hover:text-(--color-primary)"
                                 }`}
                         >
                             <div className="ml-2">

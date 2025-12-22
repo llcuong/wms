@@ -22,6 +22,7 @@ export const Sidebar = ({ isSideBarOpen, setSideBarOpen, ...props }: SidebarProp
                 navigatePage={props.navigatePage}
                 isSideBarOpen={isSideBarOpen}
                 setSideBarOpen={setSideBarOpen}
+                extraPrivateApps={props.extraPrivateApps}
             />
 
             <Footer

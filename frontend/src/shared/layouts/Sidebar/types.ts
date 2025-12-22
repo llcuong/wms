@@ -1,11 +1,7 @@
-import type { PageNavigatorProps } from "@routes/types";
+import type { PageNavigatorProps, ExtraAppConfig } from "@routes/types";
 
 export interface SidebarProps extends PageNavigatorProps {
     isSideBarOpen: boolean;
     setSideBarOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
-}
-
-interface Props {
-    isSideBarOpen: boolean;
-    toggleSidebar: () => void;
+    extraPrivateApps?: ExtraAppConfig[];
 }
