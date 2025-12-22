@@ -17,7 +17,7 @@ class UserStatus(models.Model):
         return self.status_name
 
 
-class UserAccount(models.Model):
+class UserAccounts(models.Model):
     user_id = models.CharField(max_length=20, unique=True)
     account_id = models.CharField(max_length=255, unique=True)
     account_password = models.CharField(max_length=255)
@@ -48,7 +48,7 @@ class UserAccount(models.Model):
 
 
 class UserCustomUsers(models.Model):
-    user_account = models.OneToOneField(UserAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_account')
+    user_account = models.OneToOneField(UserAccounts, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_account')
     user_id = models.CharField(max_length=20, blank=False, null=False, unique=True)
     user_name = models.CharField(max_length=255, blank=False, null=False)
     user_full_name = models.CharField(max_length=255, blank=False, null=False)
@@ -73,6 +73,7 @@ class UserCustomUsers(models.Model):
 
     def __str__(self):
         return self.user_id or self.user_name
+
 
 
 
