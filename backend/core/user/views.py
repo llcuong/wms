@@ -6,31 +6,29 @@ from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import UserAccount, UserCustomUsers
-from .serializers import LoginSerializer, LoginResponseSerializer
+from .serializers import LoginSerializer
 from .tokens import get_tokens_for_user
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    """
-    API endpoint for user login
-    
+    """    
     Request body:
     {
-        "account_id": "username",
-        "password": "password"
+        "account_id"
+        "password"
     }
     
     Response:
     {
-        "user_id": "U001",
-        "account_id": "admin",
-        "user_name": "admin",
-        "user_full_name": "Administrator",
-        "user_email": "admin@example.com",
-        "token": "generated_token",
-        "last_login": "2025-12-17T14:21:08Z"
+        "user_id"
+        "account_id"
+        "user_name"
+        "user_full_name"
+        "user_email"
+        "token"
+        "last_login"
     }
     """
     serializer = LoginSerializer(data=request.data)
@@ -110,9 +108,6 @@ def login_view(request):
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     """
-    API endpoint for user logout
-    Blacklists the refresh token to prevent reuse
-    
     Request body:
     {
         "refresh_token": "token_string"
@@ -144,9 +139,7 @@ def logout_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def refresh_token_view(request):
-    """
-    API endpoint to refresh access token using refresh token
-    
+    """   
     Request body:
     {
         "refresh_token": "token_string"
