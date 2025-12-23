@@ -36,3 +36,40 @@ class PostCreateAccountSerializer(serializers.Serializer):
     user_id = serializers.CharField(max_length=20)
     account_id = serializers.CharField(max_length=255)
     password = serializers.CharField(write_only=True)
+
+
+class GetUserAccountSerializer(serializers.Serializer):
+    """Serializer for user account information in user list"""
+    account_id = serializers.CharField()
+    account_last_login = serializers.DateTimeField()
+    created_at = serializers.DateTimeField()
+
+
+class GetUserListSerializer(serializers.ModelSerializer):
+    """Serializer for getting user list with account info"""
+    user_status_name = serializers.CharField(source='user_status.status_name', read_only=True)
+    account = serializers.SerializerMethodField()
+    has_account = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserCustomUsers
+        fields = [
+            'id',
+            'user_id',
+            'user_name',
+            'user_full_name',
+            'user_email',
+            'user_status_name',
+            'has_account',
+            'account',
+            'created_at',
+            'updated_at'
+        ]
+
+    def get_has_account(self, obj):
+        return obj.user_account is not None
+
+    def get_account(self, obj):
+        if obj.user_account:
+            return GetUserAccountSerializer(obj.user_account).data
+        return None

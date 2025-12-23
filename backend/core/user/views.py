@@ -6,8 +6,49 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import transaction
 
 from .models import UserAccounts, UserCustomUsers
-from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer
+from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer
 from .tokens import get_tokens_for_user
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])  # TODO: Change back to IsAuthenticated after testing
+def get_user_list(request):
+    """
+    Get list of all users with their account information.
+    
+    Response:
+    [
+        {
+            "id": 1,
+            "user_id": "USER001",
+            "user_name": "johndoe",
+            "user_full_name": "John Doe",
+            "user_email": "john@example.com",
+            "user_status_name": "Active",
+            "has_account": true,
+            "account": {
+                "account_id": "john.doe",
+                "account_last_login": "2023-12-01T10:00:00Z",
+                "created_at": "2023-01-01T09:00:00Z"
+            },
+            "created_at": "2023-01-01T09:00:00Z",
+            "updated_at": "2023-12-01T10:00:00Z"
+        }
+    ]
+    """
+    try:
+        users = UserCustomUsers.objects.select_related(
+            'user_account', 'user_status'
+        ).all().order_by('-created_at')
+        
+        serializer = GetUserListSerializer(users, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({
+            'error': 'Server error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
