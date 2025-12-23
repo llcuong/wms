@@ -23,7 +23,7 @@ class UserAccounts(models.Model):
     account_id = models.CharField(max_length=255, unique=True, db_index=True)
     account_password = models.CharField(max_length=255)
     account_last_login = models.DateTimeField(null=True, blank=True)
-    account_role = models.ForeignKey("data_model.DmRoles", to_field='role_code', db_column='role_code', on_delete=models.PROTECT, null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
@@ -56,6 +56,7 @@ class UserCustomUsers(models.Model):
     user_full_name = models.CharField(max_length=255, blank=False, null=False)
     user_email = models.EmailField(max_length=255, blank=True, null=True)
     user_status = models.ForeignKey(UserStatus, on_delete=models.PROTECT, related_name='users_status')
+
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.IntegerField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -75,7 +76,3 @@ class UserCustomUsers(models.Model):
 
     def __str__(self):
         return self.user_id or self.user_name
-
-
-
-
