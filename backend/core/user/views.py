@@ -3,9 +3,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db import transaction
 
 from .models import UserAccounts, UserCustomUsers
-from .serializers import PostLoginAccountSerializer
+from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer
 from .tokens import get_tokens_for_user
 
 
@@ -134,3 +135,60 @@ def post_logout_account(request):
             'message': str(e)
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def post_create_user(request):
+    serializer = PostCreateUserSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    user = serializer.save(created_by=request.user.id)
+
+    return Response({
+        "message": "User created successfully",
+        "user_id": user.user_id
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def post_create_account(request):
+    serializer = PostCreateAccountSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    user_id = serializer.validated_data['user_id']
+    account_id = serializer.validated_data['account_id']
+    password = serializer.validated_data['password']
+
+    try:
+        user = UserCustomUsers.objects.get(user_id=user_id)
+    except UserCustomUsers.DoesNotExist:
+        return Response({
+            "error": "User not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    if user.user_account:
+        return Response({
+            "error": "User already has an account"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        account = UserAccounts(
+            user_id=user.user_id,
+            account_id=account_id,
+            created_by=request.user.id
+        )
+        account.set_password(password)
+        account.save()
+
+        user.user_account = account
+        user.save(update_fields=['user_account'])
+
+    return Response({
+        "message": "Account created successfully",
+        "account_id": account.account_id
+    }, status=status.HTTP_201_CREATED)

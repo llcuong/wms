@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import UserCustomUsers, UserStatus
 
 
 class PostLoginAccountSerializer(serializers.Serializer):
@@ -13,3 +14,25 @@ class PostLoginAccountSerializer(serializers.Serializer):
             raise serializers.ValidationError("Both account_id and password are required.")
 
         return data
+
+
+class PostCreateUserSerializer(serializers.ModelSerializer):
+    user_status_id = serializers.PrimaryKeyRelatedField(
+        source='user_status',
+        queryset=UserStatus.objects.all()
+    )
+
+    class Meta:
+        model = UserCustomUsers
+        fields = [
+            'user_id',
+            'user_name',
+            'user_full_name',
+            'user_email',
+            'user_status_id'
+        ]
+
+class PostCreateAccountSerializer(serializers.Serializer):
+    user_id = serializers.CharField(max_length=20)
+    account_id = serializers.CharField(max_length=255)
+    password = serializers.CharField(write_only=True)
