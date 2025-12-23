@@ -5,13 +5,13 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import UserAccounts, UserCustomUsers
-from .serializers import LoginSerializer
+from .serializers import PostLoginAccountSerializer
 from .tokens import get_tokens_for_user
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def login_view(request):
+def post_login_account(request):
     """    
     Request:
     {
@@ -30,7 +30,7 @@ def login_view(request):
         "last_login"
     }
     """
-    serializer = LoginSerializer(data=request.data)
+    serializer = PostLoginAccountSerializer(data=request.data)
     
     if not serializer.is_valid():
         return Response({
@@ -79,7 +79,7 @@ def login_view(request):
                 'access_token': tokens['access'],
                 'refresh_token': tokens['refresh'],
                 'token_type': 'Bearer',
-                'expires_in': 3600,  # 1 hour in seconds
+                'expires_in': 3600,
                 'last_login': user_account.last_login
             }
             
@@ -92,7 +92,6 @@ def login_view(request):
             }, status=status.HTTP_404_NOT_FOUND)
             
     except UserAccounts.DoesNotExist:
-        print(f'UserAccounts.DoesNotExist')
         return Response({
             'error': 'Invalid credentials',
             'message': 'Incorrect username or password'
@@ -106,7 +105,7 @@ def login_view(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def logout_view(request):
+def post_logout_account(request):
     """
     Request:
     {
@@ -135,47 +134,3 @@ def logout_view(request):
             'message': str(e)
         }, status=status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def refresh_token_view(request):
-    """   
-    Request body:
-    {
-        "refresh_token": "token_string"
-    }
-    
-    Response:
-    {
-        "access_token": "new_access_token",
-        "refresh_token": "new_refresh_token",
-        "token_type": "Bearer",
-        "expires_in": 3600
-    }
-    """
-    try:
-        refresh_token = request.data.get('refresh_token')
-        
-        if not refresh_token:
-            return Response({
-                'error': 'Refresh token required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Create new tokens from refresh token
-        token = RefreshToken(refresh_token)
-        
-        # Get new access and refresh tokens
-        response_data = {
-            'access_token': str(token.access_token),
-            'refresh_token': str(token),  # New refresh token due to ROTATE_REFRESH_TOKENS
-            'token_type': 'Bearer',
-            'expires_in': 3600,  # 1 hour in seconds
-        }
-        
-        return Response(response_data, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        return Response({
-            'error': 'Invalid or expired refresh token',
-            'message': str(e)
-        }, status=status.HTTP_401_UNAUTHORIZED)
