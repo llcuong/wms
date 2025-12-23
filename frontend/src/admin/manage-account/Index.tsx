@@ -3,7 +3,6 @@ import type { PageNavigatorComponent } from "@routes/types";
 import { useState, useEffect, useCallback } from "react";
 import axiosClient from "@modules/api";
 
-// Types
 interface UserAccount {
     account_id: string;
     account_last_login: string | null;
@@ -23,7 +22,6 @@ interface User {
     updated_at: string;
 }
 
-// Modal Component for Add User
 interface AddUserModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -58,13 +56,11 @@ const AddUserModal = ({ isOpen, onClose, onSubmit, isLoading }: AddUserModalProp
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-                {/* Header */}
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
                     <h2 className="text-xl font-bold text-white">Add New User</h2>
                     <p className="text-indigo-100 text-sm mt-1">Fill in the user information below</p>
                 </div>
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
