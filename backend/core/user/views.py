@@ -40,11 +40,11 @@ def login_view(request):
     
     account_id = serializer.validated_data['account_id']
     password = serializer.validated_data['password']
-    
+
     try:
         # Find user account
         user_account = UserAccounts.objects.get(account_id=account_id)
-        
+
         # Check password
         if not user_account.check_password(password):
             return Response({
@@ -92,6 +92,7 @@ def login_view(request):
             }, status=status.HTTP_404_NOT_FOUND)
             
     except UserAccounts.DoesNotExist:
+        print(f'UserAccounts.DoesNotExist')
         return Response({
             'error': 'Invalid credentials',
             'message': 'Incorrect username or password'
