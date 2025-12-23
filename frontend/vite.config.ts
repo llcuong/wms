@@ -21,6 +21,8 @@ export default defineConfig({
             "@modules": path.resolve(__dirname, "src/shared/modules"),
             "@store": path.resolve(__dirname, "src/shared/stores"),
 
+            "@manage-account": path.resolve(__dirname, "src/admin/manage-account"),
+
             "@former": path.resolve(__dirname, "src/apps/former"),
             "@semi-finished": path.resolve(__dirname, "src/apps/semi-finished"),
             "@finished": path.resolve(__dirname, "src/apps/finished"),

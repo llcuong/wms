@@ -1,9 +1,10 @@
 import type { AppsConfig } from "@routes/types";
 
-import { FormerIcon, FinishedIcon, SemiFinishedIcon, ManageIcon } from "@icons"
+import { FormerIcon, FinishedIcon, SemiFinishedIcon, AccountIcon } from "@icons"
 import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
 import { Navigate as FinishedNavigate } from "@finished/Navigate"
 import { Navigate as FormerNavigate } from "@former/Navigate"
+import { Navigate as ManageAccountNavigate } from "@manage-account/Navigate"
 
 export const PUBLIC_CONFIGS: AppsConfig[] = [
     {
@@ -29,9 +30,9 @@ export const PUBLIC_CONFIGS: AppsConfig[] = [
 export const PRIVATE_CONFIGS: AppsConfig[] = [
     {
         id: 4,
-        name: "Manage",
-        icon: ManageIcon,
-        navigator: FormerNavigate,
+        name: "Account",
+        icon: AccountIcon,
+        navigator: ManageAccountNavigate,
     }
 ];
 
