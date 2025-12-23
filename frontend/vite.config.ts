@@ -24,6 +24,7 @@ export default defineConfig({
             "@former": path.resolve(__dirname, "src/apps/former"),
             "@semi-finished": path.resolve(__dirname, "src/apps/semi-finished"),
             "@finished": path.resolve(__dirname, "src/apps/finished"),
+            "@manager": path.resolve(__dirname, "src/apps/manager"),
         },
     },
     server: {

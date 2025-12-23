@@ -4,6 +4,7 @@ import { FormerIcon, FinishedIcon, SemiFinishedIcon, ManageIcon } from "@icons"
 import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
 import { Navigate as FinishedNavigate } from "@finished/Navigate"
 import { Navigate as FormerNavigate } from "@former/Navigate"
+import { Navigate as ManagerNavigate } from "@manager/Navigate"
 
 export const PUBLIC_CONFIGS: AppsConfig[] = [
     {
@@ -31,7 +32,7 @@ export const PRIVATE_CONFIGS: AppsConfig[] = [
         id: 4,
         name: "Manage",
         icon: ManageIcon,
-        navigator: FormerNavigate,
+        navigator: ManagerNavigate,
     }
 ];
 

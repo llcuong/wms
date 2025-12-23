@@ -3,9 +3,20 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.shortcuts import get_object_or_404
 
-from .models import UserAccounts, UserCustomUsers
-from .serializers import LoginSerializer
+from .models import UserAccounts, UserCustomUsers, UserStatus
+from .serializers import (
+    LoginSerializer,
+    UserStatusSerializer,
+    UserAccountListSerializer,
+    UserAccountCreateSerializer,
+    UserAccountUpdateSerializer,
+    ResetPasswordSerializer,
+    UserCustomUsersListSerializer,
+    UserCustomUsersCreateSerializer,
+    UserCustomUsersUpdateSerializer,
+)
 from .tokens import get_tokens_for_user
 
 
@@ -178,3 +189,151 @@ def refresh_token_view(request):
             'error': 'Invalid or expired refresh token',
             'message': str(e)
         }, status=status.HTTP_401_UNAUTHORIZED)
+
+
+# ============== USER STATUS VIEWS ==============
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_status_list(request):
+    """Get all user statuses"""
+    statuses = UserStatus.objects.all()
+    serializer = UserStatusSerializer(statuses, many=True)
+    return Response(serializer.data)
+
+
+# ============== USER VIEWS (CRUD) ==============
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def user_list_create(request):
+    """
+    GET: List all users
+    POST: Create a new user
+    """
+    if request.method == 'GET':
+        users = UserCustomUsers.objects.select_related('user_status', 'user_account').all()
+        serializer = UserCustomUsersListSerializer(users, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = UserCustomUsersCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save(created_by=request.user.id if hasattr(request, 'user') else 0)
+            return Response(
+                UserCustomUsersListSerializer(user).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def user_detail(request, pk):
+    """
+    GET: Retrieve a user
+    PUT: Update a user
+    DELETE: Delete a user
+    """
+    user = get_object_or_404(UserCustomUsers, pk=pk)
+    
+    if request.method == 'GET':
+        serializer = UserCustomUsersListSerializer(user)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = UserCustomUsersUpdateSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_user = serializer.save(updated_by=request.user.id if hasattr(request, 'user') else None)
+            return Response(UserCustomUsersListSerializer(updated_user).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        # Check if user has associated account
+        if hasattr(user, 'user_account') and user.user_account:
+            return Response(
+                {'error': 'Cannot delete user with associated account. Delete account first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ============== ACCOUNT VIEWS (CRUD) ==============
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def account_list_create(request):
+    """
+    GET: List all accounts
+    POST: Create a new account
+    """
+    if request.method == 'GET':
+        accounts = UserAccounts.objects.select_related('account_role').all()
+        serializer = UserAccountListSerializer(accounts, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = UserAccountCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            account = serializer.save(created_by=request.user.id if hasattr(request, 'user') else 0)
+            # Link account to user if user_id matches
+            try:
+                user = UserCustomUsers.objects.get(user_id=account.user_id)
+                user.user_account = account
+                user.save()
+            except UserCustomUsers.DoesNotExist:
+                pass
+            return Response(
+                UserAccountListSerializer(account).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def account_detail(request, pk):
+    """
+    GET: Retrieve an account
+    PUT: Update an account
+    DELETE: Delete an account
+    """
+    account = get_object_or_404(UserAccounts, pk=pk)
+    
+    if request.method == 'GET':
+        serializer = UserAccountListSerializer(account)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = UserAccountUpdateSerializer(account, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_account = serializer.save(updated_by=request.user.id if hasattr(request, 'user') else None)
+            return Response(UserAccountListSerializer(updated_account).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        # Unlink from user first
+        try:
+            user = UserCustomUsers.objects.get(user_account=account)
+            user.user_account = None
+            user.save()
+        except UserCustomUsers.DoesNotExist:
+            pass
+        account.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def account_reset_password(request, pk):
+    """
+    Reset password for an account
+    Request: { "password": "new_password" }
+    """
+    account = get_object_or_404(UserAccounts, pk=pk)
+    serializer = ResetPasswordSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        account.set_password(serializer.validated_data['password'])
+        account.updated_by = request.user.id if hasattr(request, 'user') else None
+        account.save()
+        return Response({'message': 'Password reset successfully'})
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

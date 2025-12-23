@@ -13,12 +13,10 @@ const Main: React.FC = () => {
     if (!CurrentApp) return null;
 
     return (
-        <Protected>
         <CurrentApp
             navigateApp={navigateApp}
             currentApp={currentApp}
         />
-        </Protected>
     );
 };
 
