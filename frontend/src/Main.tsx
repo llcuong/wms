@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { useAppNavigation } from "@routes/navigation";
 import { APPS_MAP } from "@routes/configs";
 import { Protected } from "@modules/Authentication";
+import "@modules/i18next";
 import "./global.css"
 
 const Main: React.FC = () => {
@@ -14,10 +15,10 @@ const Main: React.FC = () => {
 
     return (
         <Protected>
-        <CurrentApp
-            navigateApp={navigateApp}
-            currentApp={currentApp}
-        />
+            <CurrentApp
+                navigateApp={navigateApp}
+                currentApp={currentApp}
+            />
         </Protected>
     );
 };
