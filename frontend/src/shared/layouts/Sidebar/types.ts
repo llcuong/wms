@@ -7,5 +7,5 @@ export interface SidebarProps extends PageNavigatorProps {
 
 export interface Props {
     isSideBarOpen: boolean;
-    toggleSidebar: () => void;
+    toggleSidebar?: () => void;
 }
