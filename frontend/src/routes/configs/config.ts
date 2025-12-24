@@ -4,24 +4,31 @@ import { FormerIcon, FinishedIcon, SemiFinishedIcon, AccountIcon, DataIcon } fro
 import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
 import { Navigate as FinishedNavigate } from "@finished/Navigate"
 import { Navigate as FormerNavigate } from "@former/Navigate"
+import { Navigate as PackingNavigate } from "@packing/Navigate"
 import { Navigate as ManageAccountNavigate } from "@manage-account/Navigate"
 import { Navigate as ManageDataNavigate } from "@manage-data/Navigate"
 
 export const PUBLIC_CONFIGS: AppsConfig[] = [
     {
         id: 1,
+        name: "Packing",
+        icon: FormerIcon,
+        navigator: PackingNavigate,
+    },
+    {
+        id: 2,
         name: "Former",
         icon: FormerIcon,
         navigator: FormerNavigate,
     },
     {
-        id: 2,
+        id: 3,
         name: "Semi-finished",
         icon: SemiFinishedIcon,
         navigator: SemiFinishedNavigate,
     },
     {
-        id: 3,
+        id: 4,
         name: "Finished",
         icon: FinishedIcon,
         navigator: FinishedNavigate,
@@ -30,13 +37,13 @@ export const PUBLIC_CONFIGS: AppsConfig[] = [
 
 export const PRIVATE_CONFIGS: AppsConfig[] = [
     {
-        id: 4,
+        id: 10,
         name: "Data models",
         icon: DataIcon,
         navigator: ManageDataNavigate,
     },
     {
-        id: 5,
+        id: 11,
         name: "Accounts",
         icon: AccountIcon,
         navigator: ManageAccountNavigate,

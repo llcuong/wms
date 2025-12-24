@@ -24,6 +24,7 @@ export default defineConfig({
             "@manage-account": path.resolve(__dirname, "src/admin/manage-account"),
             "@manage-data": path.resolve(__dirname, "src/admin/manage-data"),
 
+            "@packing": path.resolve(__dirname, "src/apps/packing"),
             "@former": path.resolve(__dirname, "src/apps/former"),
             "@semi-finished": path.resolve(__dirname, "src/apps/semi-finished"),
             "@finished": path.resolve(__dirname, "src/apps/finished"),
