@@ -1,6 +1,6 @@
 import type { AppsConfig } from "@routes/types";
 
-import { FormerIcon, FinishedIcon, SemiFinishedIcon, AccountIcon, DataIcon } from "@icons"
+import { PackingIcon, FormerIcon, FinishedIcon, SemiFinishedIcon, AccountIcon, DataIcon } from "@icons"
 import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
 import { Navigate as FinishedNavigate } from "@finished/Navigate"
 import { Navigate as FormerNavigate } from "@former/Navigate"
@@ -12,7 +12,7 @@ export const PUBLIC_CONFIGS: AppsConfig[] = [
     {
         id: 1,
         name: "Packing",
-        icon: FormerIcon,
+        icon: PackingIcon,
         navigator: PackingNavigate,
     },
     {
