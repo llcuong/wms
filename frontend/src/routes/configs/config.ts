@@ -35,6 +35,10 @@ export const PUBLIC_CONFIGS: AppsConfig[] = [
     }
 ];
 
+export const SETTING_CONFIGS: AppsConfig[] = [
+
+];
+
 export const ADMIN_CONFIGS: AppsConfig[] = [
     {
         id: 10,
@@ -50,4 +54,4 @@ export const ADMIN_CONFIGS: AppsConfig[] = [
     }
 ];
 
-export const APPS_CONFIG: AppsConfig[] = [...PUBLIC_CONFIGS, ...ADMIN_CONFIGS];
+export const APPS_CONFIG: AppsConfig[] = [...PUBLIC_CONFIGS, ...SETTING_CONFIGS, ...ADMIN_CONFIGS];
