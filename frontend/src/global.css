@@ -14,8 +14,8 @@
 }
 
 [data-theme="dark"] {
-    --bg-primary: #1d224a;
-    --bg-secondary: #090f33;
+    --bg-primary: #111318;
+    --bg-secondary: #111318;
 
     --text-primary: #ffffff;
     --text-secondary: #ffffff;
@@ -23,7 +23,7 @@
     --color-primary: #ffffff;
     --color-secondary: #1d224a;
 
-    --shadow-primary: #131c47;
+    --shadow-primary: #1a1d24;
 }
 
 .set__copy__not__allow {

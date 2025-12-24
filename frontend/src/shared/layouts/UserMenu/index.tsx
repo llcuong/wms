@@ -1,5 +1,7 @@
 import { FC } from "react";
 import { useAuthStore } from "@modules/Authentication/useAuthStore";
+import {DropdownTranslation} from "../DropdownTranslation"
+import {DropdownTheme} from "../DropdownTheme"
 
 export const UserMenu: FC = () => {
     const user = useAuthStore((state) => state.user);
@@ -8,6 +10,8 @@ export const UserMenu: FC = () => {
 
     return (
         <div className="flex items-center gap-3">
+            <DropdownTranslation />
+            <DropdownTheme />
             <div className="text-right hidden md:block">
                 <p className="text-sm font-semibold text-gray-800">{user.name}</p>
                 <p className="text-xs text-gray-500">{user.role}</p>

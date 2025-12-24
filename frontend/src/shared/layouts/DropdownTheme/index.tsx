@@ -8,8 +8,6 @@ export const DropdownTheme: FC = () => {
     const themeOptions: DropdownOption<Theme>[] = useMemo(
         () => [
             { value: 'light', label: 'theme.light' },
-            { value: 'mars', label: 'theme.mars' },
-            { value: 'laserwave', label: 'theme.laserwave' },
             { value: 'dark', label: 'theme.dark' },
         ],
         []
@@ -21,7 +19,7 @@ export const DropdownTheme: FC = () => {
     );
 
     return (
-        <Dropdown className="w-40"
+        <Dropdown className="w-24"
             optionList={themeOptions}
             value={selectedOption}
             onChange={(option) => setTheme(option.value)}

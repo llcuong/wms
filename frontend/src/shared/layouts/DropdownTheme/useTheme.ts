@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 const DEFAULT_THEME: Theme = "light";
 
-const THEMES = ["light", "dark", "mars", "laserwave"] as const;
+const THEMES = ["light", "dark"] as const;
 
 export type Theme = (typeof THEMES)[number];
 
