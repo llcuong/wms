@@ -41,6 +41,7 @@
       "@modules/*": ["shared/modules/*"],
       "@store/*": ["shared/stores/*"],
       "@manage-account/*": ["admin/manage-account/*"],
+      "@manage-data/*": ["admin/manage-data/*"],
       "@former/*": ["apps/former/*"],
       "@semi-finished/*": ["apps/semi-finished/*"],
       "@finished/*": ["apps/finished/*"]

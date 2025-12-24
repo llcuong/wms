@@ -22,6 +22,7 @@ export default defineConfig({
             "@store": path.resolve(__dirname, "src/shared/stores"),
 
             "@manage-account": path.resolve(__dirname, "src/admin/manage-account"),
+            "@manage-data": path.resolve(__dirname, "src/admin/manage-data"),
 
             "@former": path.resolve(__dirname, "src/apps/former"),
             "@semi-finished": path.resolve(__dirname, "src/apps/semi-finished"),
