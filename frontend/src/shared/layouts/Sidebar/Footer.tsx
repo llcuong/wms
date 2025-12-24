@@ -1,7 +1,7 @@
 import { useAuthStore } from "@modules/Authentication/useAuthStore";
 import type { Props } from "./types"
 
-export function Footer({ isSideBarOpen, toggleSidebar }: Props) {
+export function Footer({ isSideBarOpen }: Props) {
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
 

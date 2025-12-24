@@ -5,3 +5,8 @@ export interface SidebarProps extends PageNavigatorProps {
     setSideBarOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
     extraPrivateApps?: ExtraAppConfig[];
 }
+
+export interface Props {
+    isSideBarOpen: boolean;
+    toggleSidebar: () => void;
+}
