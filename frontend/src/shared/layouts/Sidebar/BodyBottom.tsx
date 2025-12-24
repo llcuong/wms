@@ -3,7 +3,6 @@ import type { SidebarProps } from "./types";
 import { PRIVATE_CONFIGS } from "@routes/configs";
 
 const BodyBottom: FC<SidebarProps> = (props) => {
-    const extraApps = props.extraPrivateApps ?? [];
 
     const handleAppClick = (appId: number) => {
         if (props.currentApp === appId) {
@@ -14,12 +13,6 @@ const BodyBottom: FC<SidebarProps> = (props) => {
             }
         } else {
             props.navigateApp(appId);
-        }
-    };
-
-    const handlePageClick = (pageId: string) => {
-        if (typeof props.navigatePage === "function") {
-            props.navigatePage(pageId);
         }
     };
 
