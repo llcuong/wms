@@ -6,8 +6,4 @@ export const authAPI = {
         const response = await axiosClient.post<LoginResponse>('/user/post-login-account/', credentials);
         return response.data;
     },
-
-    logout: async (): Promise<void> => {
-        await axiosClient.post('/user/post-logout-account/');
-    }
 };

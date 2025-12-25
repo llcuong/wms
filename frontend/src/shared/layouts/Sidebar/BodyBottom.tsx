@@ -45,7 +45,7 @@ const BodyBottom: FC<SidebarProps> = (props) => {
                                 : "text-(--text-primary) hover:text-(--color-primary)"
                                 }`}
                         >
-                            <div className="ml-2">
+                            <div className="ml-1.5">
                                 <Icon />
                             </div>
 

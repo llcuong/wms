@@ -2,7 +2,7 @@ interface DropdownIconProps {
     isOpen: boolean
 };
 
-const DropdownIcon = ({ isOpen }: DropdownIconProps) => {
+export const DropdownIcon = ({ isOpen }: DropdownIconProps) => {
     return (
         <svg
             className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -12,5 +12,3 @@ const DropdownIcon = ({ isOpen }: DropdownIconProps) => {
         </svg>
     );
 };
-
-export default DropdownIcon;
