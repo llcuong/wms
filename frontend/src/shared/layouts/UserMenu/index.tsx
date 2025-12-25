@@ -1,7 +1,9 @@
 import { FC } from "react";
+
 import { useAuthStore } from "@modules/Authentication/useAuthStore";
-import {DropdownTranslation} from "../DropdownTranslation"
-import {DropdownTheme} from "../DropdownTheme"
+
+import { DropdownTheme } from "../DropdownTheme"
+import { DropdownTranslation } from "../DropdownTranslation"
 
 export const UserMenu: FC = () => {
     const user = useAuthStore((state) => state.user);
@@ -13,11 +15,11 @@ export const UserMenu: FC = () => {
             <DropdownTranslation />
             <DropdownTheme />
             <div className="text-right hidden md:block">
-                <p className="text-sm font-semibold text-gray-800">{user.name}</p>
-                <p className="text-xs text-gray-500">{user.role}</p>
+                <p className="text-sm font-semibold text-(--text-primary)">{user.name}</p>
+                <p className="text-xs text-(--text-secondary)">{user.role}</p>
             </div>
 
-            <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-md">
+            <div className="w-10 h-10 rounded-full bg-(--color-primary) flex items-center justify-center text-(--text-primary) font-bold shadow-md">
                 {user.name.charAt(0).toUpperCase()}
             </div>
         </div>
