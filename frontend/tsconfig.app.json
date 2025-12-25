@@ -42,6 +42,7 @@
       "@store/*": ["shared/stores/*"],
       "@manage-account/*": ["admin/manage-account/*"],
       "@manage-data/*": ["admin/manage-data/*"],
+      "@packing/*": ["apps/packing/*"],
       "@former/*": ["apps/former/*"],
       "@semi-finished/*": ["apps/semi-finished/*"],
       "@finished/*": ["apps/finished/*"]
