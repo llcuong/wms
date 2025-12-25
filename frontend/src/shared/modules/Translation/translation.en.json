@@ -1,8 +1,59 @@
 {
     "theme": {
         "light": "Light",
-        "mars": "Mars",
-        "laserwave": "Laserwave",
         "dark": "Dark"
+    },
+    "title": {
+        "userManagement": "User Management",
+        "addUser": "Add User",
+        "addAccount": "Add Account"
+    },
+    "description": {
+        "userManagement": "Manage users and theirs accounts",
+        "addUser": "Fill in the user information below",
+        "addAccount": "Create login account for user: {{userId}}"
+    },
+    "button": {
+        "addUser": "Add User",
+        "edit": "Edit",
+        "addAccount": "Add Account",
+        "cancel": "Cancel",
+        "save": "Save",
+        "retry": "Retry",
+        "logout": "Logout"
+    },
+    "label": {
+        "userId": "User ID",
+        "username": "Username",
+        "userInfo": "User Information",
+        "fullName": "Full Name",
+        "email": "Email",
+        "status": "Status",
+        "accountId": "Account ID",
+        "password": "Password",
+        "lastLogin": "Last Login",
+        "actions": "Actions"
+    },
+    "placeholder": {
+        "enterPassword": "Enter secure password"
+    },
+    "message": {},
+    "notification": {
+        "noUsers": "No users found.",
+        "noAccount": "No account"
+    },
+    "hint": {
+        "noUsers": "Click \"Add User\" to create your first user"
+    },
+    "status": {
+        "active": "Active",
+        "pending": "pending",
+        "deleted": "Deleted",
+        "loadingUser": "Loading users...",
+        "adding": "Adding..."
+    },
+    "custom": {
+        "showing": "Showing",
+        "users": "users"
     }
 }

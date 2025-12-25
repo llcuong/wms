@@ -1,8 +1,59 @@
 {
     "theme": {
         "light": "Sáng",
-        "mars": "Sao Hỏa",
-        "laserwave": "Sóng Laser",
         "dark": "Tối"
+    },
+    "title": {
+        "userManagement": "Quản lý người dùng",
+        "addUser": "Thêm người dùng",
+        "addAccount": "Thêm tài khoản"
+    },
+    "description": {
+        "userManagement": "Quản lý người dùng và tài khoản của họ",
+        "addUser": "Nhập thông tin người dùng bên dưới",
+        "addAccount": "Tạo tài khoản đăng nhập cho người dùng: {{userId}}"
+    },
+    "button": {
+        "addUser": "Thêm người dùng",
+        "edit": "Chỉnh sửa",
+        "addAccount": "Thêm tài khoản",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "retry": "Thử lại",
+        "logout": "Đăng xuất"
+    },
+    "label": {
+        "userId": "Mã người dùng",
+        "username": "Tên đăng nhập",
+        "userInfo": "Thông tin người dùng",
+        "fullName": "Họ và tên",
+        "email": "Email",
+        "status": "Trạng thái",
+        "accountId": "Mã tài khoản",
+        "password": "Mật khẩu",
+        "lastLogin": "Lần đăng nhập cuối",
+        "actions": "Thao tác"
+    },
+    "placeholder": {
+        "enterPassword": "Nhập mật khẩu an toàn"
+    },
+    "message": {},
+    "notification": {
+        "noUsers": "Không tìm thấy người dùng.",
+        "noAccount": "Không có tài khoản"
+    },
+    "hint": {
+        "noUsers": "Nhấn \"Thêm người dùng\" để tạo người dùng đầu tiên"
+    },
+    "status": {
+        "active": "Hoạt động",
+        "pending": "Chờ xử lý",
+        "deleted": "Đã xóa",
+        "loadingUser": "Đang tải danh sách người dùng...",
+        "adding": "Đang thêm..."
+    },
+    "custom": {
+        "showing": "Đang hiển thị",
+        "users": "người dùng"
     }
 }
