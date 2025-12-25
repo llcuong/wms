@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
-[data-theme="light"]  {
+[data-theme="light"] {
     --bg-primary: #ffffff;
     --bg-secondary: #f9fafb;
 
     --text-primary: #0b0c0f;
     --text-secondary: #6b7280;
 
-    --color-primary: #155DFC;
+    --color-primary: #155dfc;
     --color-secondary: #e5e7eb;
 
     --shadow-primary: rgba(0, 0, 0, 0.1);
@@ -15,25 +15,25 @@
 
 [data-theme="dark"] {
     --bg-primary: #111318;
-    --bg-secondary: #111318;
+    --bg-secondary: #29312e;
 
     --text-primary: #ffffff;
-    --text-secondary: #ffffff;
+    --text-secondary: #ddfff1;
 
-    --color-primary: #ffffff;
-    --color-secondary: #1d224a;
+    --color-primary: #155dfc;
+    --color-secondary: #7e85b4;
 
-    --shadow-primary: #1a1d24;
+    --shadow-primary: rgba(0, 0, 0, 0.1);
 }
 
 .set__copy__not__allow {
-  user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
 }
 
 .set__copy__allow {
-  user-select: text;
-  -webkit-user-select: text;
-  -ms-user-select: text;
+    user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
 }
