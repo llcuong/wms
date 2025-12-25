@@ -4,12 +4,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import transaction
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from .models import UserAccounts, UserCustomUsers
-from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer
+from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer, PostLogoutAccountSerializer
 from .tokens import get_tokens_for_user
 
 
+@extend_schema(
+    responses=GetUserListSerializer(many=True)
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])  # TODO: Change back to IsAuthenticated after testing
 def get_user_list(request):
@@ -50,7 +54,61 @@ def get_user_list(request):
             'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+@extend_schema(
+    request=PostLoginAccountSerializer,
+    responses={
+        200: {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "string"},
+                "account_id": {"type": "string"},
+                "user_name": {"type": "string"},
+                "user_full_name": {"type": "string"},
+                "user_email": {"type": "string"},
+                "access_token": {"type": "string"},
+                "refresh_token": {"type": "string"},
+                "token_type": {"type": "string"},
+                "expires_in": {"type": "integer"},
+                "last_login": {"type": "string", "format": "date-time"},
+            },
+        },
+        400: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"},
+                "details": {"type": "object"},
+            },
+        },
+        401: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"},
+                "message": {"type": "string"},
+            },
+        },
+        403: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"},
+                "message": {"type": "string"},
+            },
+        },
+        404: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"},
+                "message": {"type": "string"},
+            },
+        },
+        500: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"},
+                "message": {"type": "string"},
+            },
+        },
+    }
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def post_login_account(request):
@@ -145,6 +203,24 @@ def post_login_account(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(
+    request=PostLogoutAccountSerializer,
+    responses={
+        200: {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"}
+            }
+        },
+        400: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"},
+                "message": {"type": "string"}
+            }
+        }
+    }
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_logout_account(request):
@@ -177,6 +253,29 @@ def post_logout_account(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+@extend_schema(
+    request=PostCreateUserSerializer,
+    responses={
+        201: {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"},
+                "user_id": {"type": "string"},
+            }
+        },
+        400: {
+            "type": "object",
+            "properties": {
+                "user_id": {"type": "array", "items": {"type": "string"}},
+                "user_name": {"type": "array", "items": {"type": "string"}},
+                "user_full_name": {"type": "array", "items": {"type": "string"}},
+                "user_email": {"type": "array", "items": {"type": "string"}},
+                "user_status_id": {"type": "array", "items": {"type": "string"}},
+            }
+        }
+    }
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_create_user(request):
@@ -193,6 +292,30 @@ def post_create_user(request):
     }, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    request=PostCreateAccountSerializer,
+    responses={
+        201: {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"},
+                "account_id": {"type": "string"},
+            }
+        },
+        400: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"}
+            }
+        },
+        404: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string"}
+            }
+        }
+    }
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_create_account(request):

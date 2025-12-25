@@ -15,6 +15,9 @@ class PostLoginAccountSerializer(serializers.Serializer):
 
         return data
 
+class PostLogoutAccountSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(max_length=255)
+
 
 class PostCreateUserSerializer(serializers.ModelSerializer):
     user_status_id = serializers.PrimaryKeyRelatedField(
