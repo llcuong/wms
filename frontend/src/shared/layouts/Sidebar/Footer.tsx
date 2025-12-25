@@ -1,8 +1,13 @@
-import { FC } from "react";
-import { useAuthStore } from "@modules/Authentication/useAuthStore";
+import { useTranslation } from "react-i18next";
+
 import type { Props } from "./types"
 
-export function Footer({ isSideBarOpen, toggleSidebar }: Props) {
+import { LogoutIcon } from "@icons";
+import { useAuthStore } from "@modules/Authentication/useAuthStore";
+
+export function Footer({ isSideBarOpen }: Props) {
+    const { t } = useTranslation();
+
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
 
@@ -13,24 +18,23 @@ export function Footer({ isSideBarOpen, toggleSidebar }: Props) {
             <div className="w-full flex justify-center">
                 <div className="w-10 h-0.5 bg-gray-200 rounded" />
             </div>
-            <div className="h-10 w-full flex flex-col justify-center cursor-pointer">
-                <button
+            <div className="h-10 w-full flex flex-col justify-center">
+                <button type="button"
                     onClick={logout}
-                    className={`w-full h-10 rounded-lg flex items-center transition-colors "text-(--text-primary) hover:text-(--color-primary)`}
+                    className="w-full h-10 rounded-lg flex items-center text-(--text-primary)  cursor-pointer
+                                transition-colors duration-300 hover:text-(--color-primary)"
                 >
                     <div className="ml-3.5">
-                       <svg className="w-6.5 h-6.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
+                        <LogoutIcon />
                     </div>
 
                     {isSideBarOpen && (
                         <span className="font-medium overflow-hidden whitespace-nowrap ml-2.5 text-base">
-                            Logout
+                            {t("button.logout")}
                         </span>
                     )}
                 </button>
             </div>
         </>
     );
-}
+};
