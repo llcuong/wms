@@ -2,15 +2,16 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from django.db import transaction
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from .models import UserAccounts, UserCustomUsers
-from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer, PostLogoutAccountSerializer
-from .tokens import get_tokens_for_user
+from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer, PostLogoutAccountSerializer, RefreshAccessTokenResponseSerializer
+# from .tokens import get_tokens_for_user
+from .utils import get_tokens_for_user, verify_refresh_token, generate_access_token
 
-
+#get_user_list Swagger
 @extend_schema(
     responses=GetUserListSerializer(many=True)
 )
@@ -54,6 +55,7 @@ def get_user_list(request):
             'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+#post_login_account Swagger
 @extend_schema(
     request=PostLoginAccountSerializer,
     responses={
@@ -112,13 +114,13 @@ def get_user_list(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def post_login_account(request):
-    """    
+    """
     Request:
     {
         "account_id"
         "password"
     }
-    
+
     Response:
     {
         "user_id"
@@ -131,13 +133,13 @@ def post_login_account(request):
     }
     """
     serializer = PostLoginAccountSerializer(data=request.data)
-    
+
     if not serializer.is_valid():
         return Response({
             'error': 'Invalid input',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
-    
+
     account_id = serializer.validated_data['account_id']
     password = serializer.validated_data['password']
 
@@ -151,24 +153,25 @@ def post_login_account(request):
                 'error': 'Invalid credentials',
                 'message': 'Incorrect username or password'
             }, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         # Get user details
         try:
             custom_user = UserCustomUsers.objects.get(user_account=user_account)
-            
+
             # Check if user is active
             if custom_user.user_status.status_name.lower() != 'active':
                 return Response({
                     'error': 'Account inactive',
                     'message': 'Your account is not active. Please contact administrator.'
                 }, status=status.HTTP_403_FORBIDDEN)
-            
+
             # Update last login
             user_account.update_last_login()
-            
+
             # Generate JWT tokens using custom generator
-            tokens = get_tokens_for_user(user_account)
-            
+            # tokens = get_tokens_for_user(user_account)
+            tokens = get_tokens_for_user(custom_user)
+
             # Prepare response
             response_data = {
                 'user_id': custom_user.user_id,
@@ -177,20 +180,33 @@ def post_login_account(request):
                 'user_full_name': custom_user.user_full_name,
                 'user_email': custom_user.user_email or '',
                 'access_token': tokens['access'],
-                'refresh_token': tokens['refresh'],
+                # 'refresh_token': tokens['refresh'],
                 'token_type': 'Bearer',
                 'expires_in': 3600,
                 'last_login': user_account.last_login
             }
-            
-            return Response(response_data, status=status.HTTP_200_OK)
-            
+
+            response = Response(response_data, status=200)
+
+            # Set the refresh token in an HTTP Only cookie
+            response.set_cookie(
+                key='refresh_token',
+                value=tokens['refresh'],
+                httponly=True,  # JS can't read
+                secure=True,  # send only via HTTPS
+                samesite='Strict',
+                max_age=7 * 24 * 3600  # 7 days
+            )
+
+            # return Response(response_data, status=status.HTTP_200_OK)
+            return response
+
         except UserCustomUsers.DoesNotExist:
             return Response({
                 'error': 'User not found',
                 'message': 'User profile not found. Please contact administrator.'
             }, status=status.HTTP_404_NOT_FOUND)
-            
+
     except UserAccounts.DoesNotExist:
         return Response({
             'error': 'Invalid credentials',
@@ -202,9 +218,50 @@ def post_login_account(request):
             'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+#post_logout_account Swagger
+# @extend_schema(
+#     request=PostLogoutAccountSerializer,
+#     responses={
+#         200: {
+#             "type": "object",
+#             "properties": {
+#                 "message": {"type": "string"}
+#             }
+#         },
+#         400: {
+#             "type": "object",
+#             "properties": {
+#                 "error": {"type": "string"},
+#                 "message": {"type": "string"}
+#             }
+#         }
+#     }
+# )
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def post_logout_account(request):
+#     """
+#     Request:
+#     {
+#         "refresh_token": "token_string"
+#     }
+#     """
+#     user_account = request.user.user_account
+#     user_account.account_token_version += 1  # invalidate old access tokens
+#     user_account.save(update_fields=['account_token_version'])
+#
+#     refresh_token = request.data.get('refresh_token')
+#     if refresh_token:
+#         try:
+#             token = RefreshToken(refresh_token)
+#             token.blacklist()
+#         except Exception as e:
+#             print(f"Unexpected error during logout: {str(e)}")
+#
+#     return Response({"message": "Logged out successfully"})
 @extend_schema(
-    request=PostLogoutAccountSerializer,
+    summary="Logout user",
+    description="Invalidate access tokens and refresh token stored in HTTP Only cookie.",
     responses={
         200: {
             "type": "object",
@@ -212,7 +269,7 @@ def post_login_account(request):
                 "message": {"type": "string"}
             }
         },
-        400: {
+        401: {
             "type": "object",
             "properties": {
                 "error": {"type": "string"},
@@ -225,35 +282,29 @@ def post_login_account(request):
 @permission_classes([IsAuthenticated])
 def post_logout_account(request):
     """
-    Request:
-    {
-        "refresh_token": "token_string"
-    }
+    Logout user by invalidating access tokens and refresh token.
+
+    Refresh token is read from HTTP Only cookie; no body required.
     """
-    try:
-        refresh_token = request.data.get('refresh_token')
-        
-        if not refresh_token:
-            return Response({
-                'error': 'Refresh token required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Blacklist the refresh token
-        token = RefreshToken(refresh_token)
-        token.blacklist()
-        
-        return Response({
-            'message': 'Logged out successfully'
-        }, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        return Response({
-            'error': 'Invalid token',
-            'message': str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+    user_account = request.user.user_account
+    user_account.account_token_version += 1
+    user_account.save(update_fields=['account_token_version'])
 
+    # Get refresh token from HTTP Only cookie
+    refresh_token = request.COOKIES.get('refresh_token')
+    if refresh_token:
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except Exception as e:
+            print(f"Unexpected error during logout: {str(e)}")
 
+    # Delete refresh token cookie
+    response = Response({"message": "Logged out successfully"}, status=200)
+    response.delete_cookie('refresh_token')
+    return response
 
+#post_create_user Swagger
 @extend_schema(
     request=PostCreateUserSerializer,
     responses={
@@ -279,6 +330,22 @@ def post_logout_account(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_create_user(request):
+    """
+    Create a new user.
+    Request:
+    {
+        "user_id"
+        "user_name"
+        "user_full_name"
+        "user_email"
+        "user_status_id"
+    }
+    Response:
+    {
+        "message"
+        "user_id"
+    }
+    """
     serializer = PostCreateUserSerializer(data=request.data)
 
     if not serializer.is_valid():
@@ -291,7 +358,7 @@ def post_create_user(request):
         "user_id": user.user_id
     }, status=status.HTTP_201_CREATED)
 
-
+#post_create_account Swagger
 @extend_schema(
     request=PostCreateAccountSerializer,
     responses={
@@ -319,6 +386,20 @@ def post_create_user(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def post_create_account(request):
+    """
+    Create a new account for an existing user.
+    Request:
+    {
+        "user_id"
+        "account_id"
+        "password"
+    }
+    Response:
+    {
+        "message"
+        "account_id"
+    }
+    """
     serializer = PostCreateAccountSerializer(data=request.data)
 
     if not serializer.is_valid():
@@ -356,3 +437,46 @@ def post_create_account(request):
         "message": "Account created successfully",
         "account_id": account.account_id
     }, status=status.HTTP_201_CREATED)
+
+# refresh_access_token Swagger
+@extend_schema(
+    summary="Refresh access token",
+    description=(
+        "Refresh the access token using HTTP Only refresh token stored in cookie.\n"
+        "No body is required. The server reads the refresh token from cookie."
+    ),
+    responses={
+        200: RefreshAccessTokenResponseSerializer,
+        401: {
+            "description": "Invalid or expired refresh token",
+            "examples": [
+                {"error": "Invalid or expired refresh token"}
+            ]
+        }
+    }
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def refresh_access_token(request):
+    refresh_token = request.COOKIES.get('refresh_token')
+
+    if not refresh_token:
+        return Response({
+            "error": "Refresh token not provided"
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        user_id = verify_refresh_token(refresh_token)
+        user = UserCustomUsers.objects.get(user_id=user_id)
+        new_access_token = generate_access_token(user)
+
+        return Response({
+            "access_token": new_access_token,
+            "token_type": "Bearer",
+            "expires_in": 3600
+        }, status=status.HTTP_200_OK)
+
+    except Exception:
+        return Response({
+            "error": "Invalid or expired refresh token"
+        }, status=status.HTTP_401_UNAUTHORIZED)

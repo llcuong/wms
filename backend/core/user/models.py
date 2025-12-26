@@ -24,6 +24,8 @@ class UserAccounts(models.Model):
     account_password = models.CharField(max_length=255)
     account_last_login = models.DateTimeField(null=True, blank=True)
 
+    account_token_version = models.IntegerField(default=1)
+
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
@@ -73,6 +75,10 @@ class UserCustomUsers(models.Model):
             self.user_account.user_id = self.user_id
             self.user_account.save(update_fields=['user_id'])
         super().save(*args, **kwargs)
+
+    @property
+    def is_authenticated(self):
+        return True
 
     def __str__(self):
         return self.user_id or self.user_name
