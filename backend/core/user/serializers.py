@@ -76,3 +76,9 @@ class GetUserListSerializer(serializers.ModelSerializer):
         if obj.user_account:
             return GetUserAccountSerializer(obj.user_account).data
         return None
+
+class RefreshAccessTokenResponseSerializer(serializers.Serializer):
+    """Serializer for refreshing access token"""
+    access_token = serializers.CharField()
+    token_type = serializers.CharField(default="Bearer")
+    expires_in = serializers.IntegerField(default=3600)

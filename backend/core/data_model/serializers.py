@@ -137,3 +137,44 @@ class GetDmMachineLineByIdSerializer(serializers.ModelSerializer):
             "line_code",
             "line_name",
         ]
+class GetDmFactoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DmFactory
+        fields = ['factory_code', 'factory_name']
+
+class GetDmBranchListSerializer(serializers.ModelSerializer):
+    factory_code = serializers.CharField(source='factory_code.factory_code')
+
+    class Meta:
+        model = DmBranch
+        fields = [
+            "id",
+            "factory_code",
+            "branch_type",
+            "branch_code",
+            "branch_name",
+        ]
+
+class GetDmMachineListSerializer(serializers.ModelSerializer):
+    branch_code = serializers.CharField(source='branch_code.branch_code')
+
+    class Meta:
+        model = DmMachine
+        fields = [
+            "id",
+            "branch_code",
+            "machine_code",
+            "machine_name",
+        ]
+
+class GetDmMachineLineListSerializer(serializers.ModelSerializer):
+    machine_code = serializers.CharField(source='machine_code.machine_code')
+
+    class Meta:
+        model = DmMachineLine
+        fields = [
+            "id",
+            "machine_code",
+            "line_code",
+            "line_name",
+        ]
