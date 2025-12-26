@@ -109,9 +109,9 @@ const Index: PageNavigatorComponent = (props) => {
                 ) : (
                     <div className="bg-(--bg-primary) rounded-2xl shadow-xl shadow-gray-200/50 overflow-hidden border border-(--color-secondary)">
                         {/* Table */}
-                        <div className="overflow-x-auto">
+                        <div className="max-h-[70vh] overflow-auto">
                             <table className="w-full">
-                                <thead>
+                                <thead className="sticky top-0 z-10">
                                     <tr className="bg-(--bg-secondary) border-b border-(--color-secondary)">
                                         {TH_LIST.map((th, idx) => (
                                             <th key={idx} className="text-left px-6 py-4 text-xs font-semibold text-(--text-secondary) tracking-wider">
