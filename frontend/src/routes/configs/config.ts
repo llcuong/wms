@@ -1,28 +1,28 @@
 import type { AppsConfig } from "@routes/types";
 
-import { FormerIcon, FinishedIcon, SemiFinishedIcon, AccountIcon, DataIcon } from "@icons"
-import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
-import { Navigate as FinishedNavigate } from "@finished/Navigate"
 import { Navigate as FormerNavigate } from "@former/Navigate"
-import { Navigate as ManageAccountNavigate } from "@manage-account/Navigate"
+import { Navigate as FinishedNavigate } from "@finished/Navigate"
 import { Navigate as ManageDataNavigate } from "@manage-data/Navigate"
+import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
+import { Navigate as ManageAccountNavigate } from "@manage-account/Navigate"
+import { FormerIcon, FinishedIcon, SemiFinishedIcon, AccountIcon, DataIcon } from "@icons"
 
 export const PUBLIC_CONFIGS: AppsConfig[] = [
     {
         id: 1,
-        name: "Former",
+        name: "former",
         icon: FormerIcon,
         navigator: FormerNavigate,
     },
     {
         id: 2,
-        name: "Semi-finished",
+        name: "semiFinished",
         icon: SemiFinishedIcon,
         navigator: SemiFinishedNavigate,
     },
     {
         id: 3,
-        name: "Finished",
+        name: "finished",
         icon: FinishedIcon,
         navigator: FinishedNavigate,
     }
@@ -31,13 +31,13 @@ export const PUBLIC_CONFIGS: AppsConfig[] = [
 export const PRIVATE_CONFIGS: AppsConfig[] = [
     {
         id: 4,
-        name: "Data models",
+        name: "dataModels",
         icon: DataIcon,
         navigator: ManageDataNavigate,
     },
     {
         id: 5,
-        name: "Accounts",
+        name: "accounts",
         icon: AccountIcon,
         navigator: ManageAccountNavigate,
     }

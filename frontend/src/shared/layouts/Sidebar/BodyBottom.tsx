@@ -1,8 +1,13 @@
 import { FC } from "react";
+import { useTranslation } from "react-i18next";
+
 import type { SidebarProps } from "./types";
+
 import { PRIVATE_CONFIGS } from "@routes/configs";
 
 const BodyBottom: FC<SidebarProps> = (props) => {
+    const { t } = useTranslation();
+
     const extraApps = props.extraPrivateApps ?? [];
 
     const handleAppClick = (appId: number) => {
@@ -25,7 +30,7 @@ const BodyBottom: FC<SidebarProps> = (props) => {
 
     return (
         <div className="px-1.5 pb-2 flex flex-col space-y-0.5">
-           {PRIVATE_CONFIGS.map((app) => {
+            {PRIVATE_CONFIGS.map((app) => {
                 const Icon = app.icon;
                 const isActive = props.currentApp === app.id;
 
@@ -45,7 +50,7 @@ const BodyBottom: FC<SidebarProps> = (props) => {
 
                         {props.isSideBarOpen && (
                             <span className="font-medium overflow-hidden whitespace-nowrap ml-2.5 text-base">
-                                {app.name}
+                                {t(`app.${app.name}`)}
                             </span>
                         )}
                     </button>

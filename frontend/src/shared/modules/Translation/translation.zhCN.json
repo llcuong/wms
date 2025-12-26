@@ -3,6 +3,13 @@
         "light": "浅色",
         "dark": "深色"
     },
+    "app": {
+        "accounts": "账户",
+        "dataModels": "数据模型",
+        "former": "原料",
+        "semiFinished": "半成品",
+        "finished": "成品"
+    },
     "title": {
         "userManagement": "用户管理",
         "addUser": "添加用户",

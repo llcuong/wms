@@ -3,6 +3,13 @@
         "light": "Sáng",
         "dark": "Tối"
     },
+    "app": {
+        "accounts": "Tài khoản",
+        "dataModels": "Dữ liệu",
+        "former": "Nguyên liệu",
+        "semiFinished": "Bán thành phẩm",
+        "finished": "Thành phẩm"
+    },
     "title": {
         "userManagement": "Quản lý người dùng",
         "addUser": "Thêm người dùng",

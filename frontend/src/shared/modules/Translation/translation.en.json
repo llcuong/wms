@@ -3,6 +3,13 @@
         "light": "Light",
         "dark": "Dark"
     },
+    "app": {
+        "accounts": "Accounts",
+        "dataModels": "Data Models",
+        "former": "Former",
+        "semiFinished": "Semi-Finished",
+        "finished": "Finished"
+    },
     "title": {
         "userManagement": "User Management",
         "addUser": "Add User",

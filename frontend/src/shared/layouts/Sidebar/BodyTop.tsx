@@ -1,8 +1,12 @@
 import { FC } from "react";
-import { PUBLIC_CONFIGS } from "@routes/configs";
+import { useTranslation } from "react-i18next";
+
 import type { SidebarProps } from "./types";
 
+import { PUBLIC_CONFIGS } from "@routes/configs";
+
 const BodyTop: FC<SidebarProps> = (props) => {
+    const { t } = useTranslation();
 
     const handleOnClick = (appId: number) => {
         if (props.currentApp === appId) {
@@ -39,7 +43,7 @@ const BodyTop: FC<SidebarProps> = (props) => {
 
                             {props.isSideBarOpen && (
                                 <span className="font-medium overflow-hidden whitespace-nowrap ml-2.5 text-base">
-                                    {app.name}
+                                    {t(`app.${app.name}`)}
                                 </span>
                             )}
                         </button>
