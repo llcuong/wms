@@ -47,7 +47,7 @@
     },
     "status": {
         "active": "Active",
-        "pending": "pending",
+        "pending": "Pending",
         "deleted": "Deleted",
         "loadingUser": "Loading users...",
         "adding": "Adding..."

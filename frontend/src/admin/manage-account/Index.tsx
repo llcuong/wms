@@ -44,14 +44,14 @@ const Index: PageNavigatorComponent = (props) => {
             case 'bg':
                 switch (status) {
                     case 'active': return 'bg-emerald-100 text-emerald-700';
-                    case 'inactive': return 'bg-yellow-100 text-yellow-700';
+                    case 'pending': return 'bg-yellow-100 text-yellow-700';
                     case 'deleted': return 'bg-red-100 text-red-700';
                     default: return;
                 };
             case 'text':
                 switch (status) {
                     case 'active': return 'bg-emerald-500';
-                    case 'inactive': return 'bg-yellow-500';
+                    case 'pending': return 'bg-yellow-500';
                     case 'deleted': return 'bg-red-500';
                     default: return;
                 };
