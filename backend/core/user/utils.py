@@ -1,4 +1,4 @@
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 def get_tokens_for_user(user_custom_user):
     account = user_custom_user.user_account

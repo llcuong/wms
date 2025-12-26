@@ -7,7 +7,7 @@ class CustomJWTAuthentication(JWTAuthentication):
         user_id = validated_token.get("user_id")
         token_version = validated_token.get("token_version", 0)
 
-        print(user_id, token_version)
+        print("user_id: ",user_id," --------- token_version: ", token_version)
 
         if not user_id:
             raise AuthenticationFailed("Token missing user_id")

@@ -178,3 +178,23 @@ class GetDmMachineLineListSerializer(serializers.ModelSerializer):
             "line_code",
             "line_name",
         ]
+
+class UpdateDmFactorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DmFactory
+        fields = ['factory_name']
+
+class UpdateDmBranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DmBranch
+        fields = ['branch_type', 'branch_name']
+
+class UpdateDmMachineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DmMachine
+        fields = ['machine_name']
+
+class UpdateDmMachineLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DmMachineLine
+        fields = ['line_name']
