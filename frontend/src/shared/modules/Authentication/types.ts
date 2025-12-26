@@ -15,7 +15,7 @@ export interface LoginResponse {
     user_name: string;
     user_full_name: string;
     user_email: string;
-    token: string;
+    access_token: string;
     last_login: string;
 }
 
