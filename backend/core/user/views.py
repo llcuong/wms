@@ -425,7 +425,7 @@ def post_create_account(request):
 )
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def refresh_access_token(request):
+def post_refresh_access_token(request):
     refresh_token = request.COOKIES.get('refresh_token')
 
     if not refresh_token:
@@ -463,7 +463,7 @@ def refresh_access_token(request):
 )
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def post_change_password(request):
+def post_change_account_password(request):
     """
     Change password for the current authenticated user.
     Request Body:

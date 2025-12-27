@@ -9,6 +9,6 @@ urlpatterns = [
     path('post-logout-account/', views.post_logout_account, name='post_logout_account'),
     path('post-create-user/', views.post_create_user, name='post_create_user'),
     path('post-create-account/', views.post_create_account, name='post_create_account'),
-    path('refresh-access-token/', views.refresh_access_token, name='refresh_access_token'),
-    path('post-change-password/', views.post_change_password, name='post_change_password'),
+    path('post-refresh-access-token/', views.post_refresh_access_token, name='post_refresh_access_token'),
+    path('post-change-account-password/', views.post_change_account_password, name='post_change_account_password'),
 ]
