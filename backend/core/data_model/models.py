@@ -81,12 +81,26 @@ class DmPermissions(models.Model):
 
 
 class DmAppName(models.Model):
+
+    class AppType(models.IntegerChoices):
+        PUBLIC = 1, "public"
+        PRIVATE = 2, "private"
+        ADMIN = 3, "admin"
+
     app_id = models.AutoField(primary_key=True)
     app_code = models.CharField(max_length=50, unique=True)
     app_name = models.CharField(max_length=100)
 
+    app_type = models.IntegerField(
+        choices=AppType.choices,
+        default=AppType.PUBLIC
+    )
+
     class Meta:
         db_table = 'dm_app_name'
+
+    def __str__(self):
+        return f"{self.app_code} - {self.get_app_type_display()}"
 
 
 class DmAppPageName(models.Model):

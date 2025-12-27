@@ -46,7 +46,7 @@ def get_user_list(request):
         users = (
             UserCustomUsers.objects
             .select_related('user_account', 'user_status')
-            .exclude(user_id=current_user.user_id)  
+            .exclude(user_id=current_user.user_id)
             .order_by('-created_at')
         )
 
@@ -451,7 +451,7 @@ def refresh_access_token(request):
 
 # change_password Swagger
 @extend_schema(
-    tags=["Auth"],
+    tags=["user"],
     summary="Change password",
     description="Change password for current authenticated user.",
     request=ChangePasswordSerializer,
@@ -463,7 +463,7 @@ def refresh_access_token(request):
 )
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def change_password(request):
+def post_change_password(request):
     """
     Change password for the current authenticated user.
     Request Body:
