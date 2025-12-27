@@ -93,11 +93,10 @@ export default function HomeScreen() {
                             renderItem={renderWarehouseItem}
                             showsVerticalScrollIndicator={false}
                         />
-
                     </View>
                 </View>
             </Modal>
 
-    </SafeAreaView>
-  );
+        </SafeAreaView>
+    );
 }
