@@ -10,4 +10,5 @@ urlpatterns = [
     path('post-create-user/', views.post_create_user, name='post_create_user'),
     path('post-create-account/', views.post_create_account, name='post_create_account'),
     path('refresh-access-token/', views.refresh_access_token, name='refresh_access_token'),
+    path('change-password/', views.change_password, name='change_password'),
 ]

@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from django.db import transaction
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 
 from .models import UserAccounts, UserCustomUsers
-from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer, PostLogoutAccountSerializer, RefreshAccessTokenResponseSerializer
+from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer, PostLogoutAccountSerializer, RefreshAccessTokenResponseSerializer, ChangePasswordSerializer
 # from .tokens import get_tokens_for_user
 from .utils import get_tokens_for_user, verify_refresh_token, generate_access_token
 
@@ -16,44 +16,52 @@ from .utils import get_tokens_for_user, verify_refresh_token, generate_access_to
     responses=GetUserListSerializer(many=True)
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])  # TODO: Change back to IsAuthenticated after testing
+@permission_classes([IsAuthenticated])
 def get_user_list(request):
     """
-    Get list of all users with their account information.
-    
+    Get list of all users except the current logged-in user.
     Response:
-    [
-        {
-            "id": 1,
-            "user_id": "USER001",
-            "user_name": "johndoe",
-            "user_full_name": "John Doe",
-            "user_email": "john@example.com",
-            "user_status_name": "Active",
-            "has_account": true,
-            "account": {
-                "account_id": "john.doe",
-                "account_last_login": "2023-12-01T10:00:00Z",
-                "created_at": "2023-01-01T09:00:00Z"
-            },
-            "created_at": "2023-01-01T09:00:00Z",
-            "updated_at": "2023-12-01T10:00:00Z"
-        }
-    ]
+#     [
+#         {
+#             "id": 1,
+#             "user_id": "USER001",
+#             "user_name": "johndoe",
+#             "user_full_name": "John Doe",
+#             "user_email": "john@example.com",
+#             "user_status_name": "Active",
+#             "has_account": true,
+#             "account": {
+#                 "account_id": "john.doe",
+#                 "account_last_login": "2023-12-01T10:00:00Z",
+#                 "created_at": "2023-01-01T09:00:00Z"
+#             },
+#             "created_at": "2023-01-01T09:00:00Z",
+#             "updated_at": "2023-12-01T10:00:00Z"
+#         }
+#     ]
     """
     try:
-        users = UserCustomUsers.objects.select_related(
-            'user_account', 'user_status'
-        ).all().order_by('-created_at')
-        
+        current_user = request.user  # UserCustomUsers
+
+        users = (
+            UserCustomUsers.objects
+            .select_related('user_account', 'user_status')
+            .exclude(user_id=current_user.user_id)  
+            .order_by('-created_at')
+        )
+
         serializer = GetUserListSerializer(users, many=True)
-        
+
         return Response(serializer.data, status=status.HTTP_200_OK)
+
     except Exception as e:
-        return Response({
-            'error': 'Server error',
-            'message': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {
+                'error': 'Server error',
+                'message': str(e)
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 #post_login_account Swagger
 @extend_schema(
@@ -218,47 +226,7 @@ def post_login_account(request):
             'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-#post_logout_account Swagger
-# @extend_schema(
-#     request=PostLogoutAccountSerializer,
-#     responses={
-#         200: {
-#             "type": "object",
-#             "properties": {
-#                 "message": {"type": "string"}
-#             }
-#         },
-#         400: {
-#             "type": "object",
-#             "properties": {
-#                 "error": {"type": "string"},
-#                 "message": {"type": "string"}
-#             }
-#         }
-#     }
-# )
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# def post_logout_account(request):
-#     """
-#     Request:
-#     {
-#         "refresh_token": "token_string"
-#     }
-#     """
-#     user_account = request.user.user_account
-#     user_account.account_token_version += 1  # invalidate old access tokens
-#     user_account.save(update_fields=['account_token_version'])
-#
-#     refresh_token = request.data.get('refresh_token')
-#     if refresh_token:
-#         try:
-#             token = RefreshToken(refresh_token)
-#             token.blacklist()
-#         except Exception as e:
-#             print(f"Unexpected error during logout: {str(e)}")
-#
-#     return Response({"message": "Logged out successfully"})
+# post_logout_account Swagger
 @extend_schema(
     summary="Logout user",
     description="Invalidate access tokens and refresh token stored in HTTP Only cookie.",
@@ -480,3 +448,63 @@ def refresh_access_token(request):
         return Response({
             "error": "Invalid or expired refresh token"
         }, status=status.HTTP_401_UNAUTHORIZED)
+
+# change_password Swagger
+@extend_schema(
+    tags=["Auth"],
+    summary="Change password",
+    description="Change password for current authenticated user.",
+    request=ChangePasswordSerializer,
+    responses={
+        200: OpenApiResponse(description="Password changed successfully"),
+        400: OpenApiResponse(description="Invalid input or wrong old password"),
+        401: OpenApiResponse(description="Unauthorized"),
+    }
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """
+    Change password for the current authenticated user.
+    Request Body:
+        {
+            "old_password": "old123",
+            "new_password": "newStrong123",
+            "confirm_password": "newStrong123"
+        }
+    Rules:
+    - old_password must be correct
+    - new_password and confirm_password must match
+    - token_version will be increased (force re-login)
+    """
+    serializer = ChangePasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    user: UserCustomUsers = request.user
+    account = user.user_account
+
+    if not account:
+        return Response(
+            {"error": "User account not found"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Check old password
+    if not account.check_password(serializer.validated_data["old_password"]):
+        return Response(
+            {"error": "Old password is incorrect"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Set new password
+    account.set_password(serializer.validated_data["new_password"])
+
+    # Invalidate existing tokens
+    account.account_token_version += 1
+    account.updated_by = user.id if hasattr(user, "id") else None
+    account.save(update_fields=["account_password", "account_token_version", "updated_by"])
+
+    return Response(
+        {"message": "Password changed successfully"},
+        status=status.HTTP_200_OK
+    )
