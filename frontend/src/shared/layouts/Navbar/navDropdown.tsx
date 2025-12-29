@@ -50,7 +50,7 @@ export const NavDropdown = ({ group, onNavigate }: Props) => {
           ${open ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-95 pointer-events-none"}
         `}
       >
-        <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden ring-2 ring-blue-500">
+        <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden ring-1 ring-blue-500">
           <ul className="p-1.5">
             {group.items.map((item) => (
               <li key={item.navigate}>

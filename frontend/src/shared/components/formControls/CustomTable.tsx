@@ -1,5 +1,14 @@
 import { useState, useMemo, ReactNode } from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Check } from "lucide-react";
+import {
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 
 export interface TableHeader<T> {
   title: string;
@@ -16,20 +25,30 @@ export interface ActionButton<T> {
   disabled?: boolean;
 }
 
+export interface PaginationConfig {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
+  itemsPerPageOptions?: number[];
+}
+
 export interface TableProps<T> {
   data: T[];
   headers: TableHeader<T>[];
   isCheckbox?: boolean;
-  isAutoId?: boolean; // New prop
+  isAutoId?: boolean;
   actionButtons?: ActionButton<T>[];
   informationElement?: ReactNode;
   onRowClick?: (row: T) => void;
   className?: string;
-  width?: string; // New prop
-  height?: string; // New prop
+  width?: string;
+  height?: string;
   maxWidth?: string;
   maxHeight?: string;
   isDivided?: boolean;
+  pagination?: PaginationConfig;
 }
 
 // Modern Checkbox Component for reuse
@@ -62,11 +81,168 @@ const CustomCheckbox = ({
   </div>
 );
 
+// Pagination Component
+const Pagination = ({ config }: { config: PaginationConfig }) => {
+  const {
+    currentPage,
+    itemsPerPage,
+    totalItems,
+    onPageChange,
+    onItemsPerPageChange,
+    itemsPerPageOptions = [10, 25, 50, 100],
+  } = config;
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 7;
+
+    if (totalPages <= maxVisible) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    // Always show first page
+    pages.push(1);
+
+    if (currentPage > 3) {
+      pages.push("...");
+    }
+
+    // Show pages around current page
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (currentPage < totalPages - 2) {
+      pages.push("...");
+    }
+
+    // Always show last page
+    if (totalPages > 1) {
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+
+  return (
+    <div className="flex items-center justify-between gap-4 flex-wrap">
+      {/* Items per page selector */}
+      {onItemsPerPageChange && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Show</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+          >
+            {itemsPerPageOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-gray-600">per page</span>
+        </div>
+      )}
+
+      {/* Page info */}
+      <div className="text-sm text-gray-600 font-medium">
+        Showing <span className="text-indigo-600">{startItem}</span> to{" "}
+        <span className="text-indigo-600">{endItem}</span> of{" "}
+        <span className="text-indigo-600">{totalItems}</span> results
+      </div>
+
+      {/* Page navigation */}
+      <div className="flex items-center gap-1">
+        {/* First page */}
+        <button
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          title="First page"
+        >
+          <ChevronsLeft className="w-4 h-4" />
+        </button>
+
+        {/* Previous page */}
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          title="Previous page"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Page numbers */}
+        <div className="flex items-center gap-1">
+          {pageNumbers.map((page, index) => {
+            if (page === "...") {
+              return (
+                <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                  ...
+                </span>
+              );
+            }
+
+            return (
+              <button
+                key={page}
+                onClick={() => onPageChange(page as number)}
+                className={`
+                  min-w-[2.5rem] px-3 py-1.5 rounded-lg font-medium text-sm transition-all
+                  ${
+                    currentPage === page
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "hover:bg-gray-100 text-gray-700"
+                  }
+                `}
+              >
+                {page}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Next page */}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          title="Next page"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+
+        {/* Last page */}
+        <button
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          title="Last page"
+        >
+          <ChevronsRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export function Table<T extends Record<string, unknown>>({
   data = [],
   headers = [],
   isCheckbox = false,
-  isAutoId = false, // Default to false
+  isAutoId = false,
   actionButtons = [],
   informationElement,
   onRowClick,
@@ -76,6 +252,7 @@ export function Table<T extends Record<string, unknown>>({
   maxWidth,
   maxHeight,
   isDivided,
+  pagination,
 }: TableProps<T>) {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [sortConfig, setSortConfig] = useState<{
@@ -139,6 +316,16 @@ export function Table<T extends Record<string, unknown>>({
     );
   };
 
+  // Calculate row number offset for auto ID when pagination is enabled
+  const getRowNumber = (rowIndex: number) => {
+    if (pagination) {
+      return (
+        (pagination.currentPage - 1) * pagination.itemsPerPage + rowIndex + 1
+      );
+    }
+    return rowIndex + 1;
+  };
+
   return (
     <div
       className={`flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden ${className}`}
@@ -192,78 +379,134 @@ export function Table<T extends Record<string, unknown>>({
             </tr>
           </thead>
           <tbody className="bg-white">
-            {sortedData.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                onClick={() => onRowClick?.(row)}
-                className={`
-                  transition-colors group
-                  ${selectedRows.has(rowIndex) ? 'bg-indigo-50/50' : 'hover:bg-gray-50'}
-                  ${isDivided ? 'border-b border-gray-100' : ''}
-                `}
-              >
-                {/* Manual Border Rendering to bypass divide-y issues */}
-                {isCheckbox && (
-                  <td className={`px-5 py-3 ${isDivided ? 'border-b border-gray-100' : ''}`}>
-                    <CustomCheckbox checked={selectedRows.has(rowIndex)} onChange={() => handleSelectRow(rowIndex)} />
-                  </td>
-                )}
-                {isAutoId && (
-                  <td className={`px-5 py-3 text-sm text-gray-400 ${isDivided ? 'border-b border-gray-100' : ''}`}>
-                    {rowIndex + 1}
-                  </td>
-                )}
-                {headers.map((h, ci) => (
-                  <td 
-                    key={ci} 
-                    className={`px-5 py-3 text-sm text-gray-700 ${isDivided ? 'border-b border-gray-100' : ''}`}
-                  >
-                    {String(row[h.dataKey] ?? '-')}
-                  </td>
-                ))}
+            {sortedData.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={
+                    headers.length + (isCheckbox ? 1 : 0) + (isAutoId ? 1 : 0)
+                  }
+                  className="px-5 py-12 text-center text-gray-400"
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <svg
+                      className="w-12 h-12 text-gray-300"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium">
+                      No data available
+                    </span>
+                  </div>
+                </td>
               </tr>
-            ))}
+            ) : (
+              sortedData.map((row, rowIndex) => (
+                <tr
+                  key={rowIndex}
+                  onClick={() => onRowClick?.(row)}
+                  className={`
+                    transition-colors group
+                    ${
+                      selectedRows.has(rowIndex)
+                        ? "bg-indigo-50/50"
+                        : "hover:bg-gray-50"
+                    }
+                    ${isDivided ? "border-b border-gray-100" : ""}
+                  `}
+                >
+                  {isCheckbox && (
+                    <td
+                      className={`px-5 py-3 ${
+                        isDivided ? "border-b border-gray-100" : ""
+                      }`}
+                    >
+                      <CustomCheckbox
+                        checked={selectedRows.has(rowIndex)}
+                        onChange={() => handleSelectRow(rowIndex)}
+                      />
+                    </td>
+                  )}
+                  {isAutoId && (
+                    <td
+                      className={`px-5 py-3 text-sm text-gray-400 font-medium ${
+                        isDivided ? "border-b border-gray-100" : ""
+                      }`}
+                    >
+                      {getRowNumber(rowIndex)}
+                    </td>
+                  )}
+                  {headers.map((h, ci) => (
+                    <td
+                      key={ci}
+                      className={`px-5 py-3 text-sm text-gray-700 ${
+                        isDivided ? "border-b border-gray-100" : ""
+                      }`}
+                    >
+                      {String(row[h.dataKey] ?? "-")}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
       {/* Sticky Action Footer */}
-      {(actionButtons.length > 0 || informationElement) && (
-        <div className="sticky bottom-0 z-20 flex items-center justify-between gap-4 p-4 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
-          <div className="flex items-center gap-3">
-            {actionButtons.map((button, index) => (
-              <button
-                key={index}
-                onClick={() => button.onClick(getSelectedRowsData())}
-                disabled={button.disabled || selectedRows.size === 0}
-                className={`
-                  px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all active:scale-95
-                  ${
-                    selectedRows.size > 0
-                      ? "shadow-md shadow-indigo-100 hover:-translate-y-0.5"
-                      : "opacity-40 grayscale pointer-events-none bg-gray-100 text-gray-400"
-                  }
-                `}
-                style={{
-                  backgroundColor:
-                    selectedRows.size > 0
-                      ? button.color || "#4f46e5"
-                      : undefined,
-                  color: selectedRows.size > 0 ? "white" : undefined,
-                }}
-              >
-                {button.icon}
-                {button.tooltip}
-              </button>
-            ))}
-            {selectedRows.size > 0 && (
-              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full animate-pulse">
-                {selectedRows.size} Selected
-              </span>
-            )}
-          </div>
-          {informationElement && (
-            <div className="text-sm font-medium text-gray-500 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-              {informationElement}
+      {(actionButtons.length > 0 || informationElement || pagination) && (
+        <div className="sticky bottom-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          {/* Action buttons and info */}
+          {(actionButtons.length > 0 || informationElement) && (
+            <div className="flex items-center justify-between gap-4 p-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                {actionButtons.map((button, index) => (
+                  <button
+                    key={index}
+                    onClick={() => button.onClick(getSelectedRowsData())}
+                    disabled={button.disabled || selectedRows.size === 0}
+                    className={`
+                      px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all active:scale-95
+                      ${
+                        selectedRows.size > 0
+                          ? "shadow-md shadow-indigo-100 hover:-translate-y-0.5"
+                          : "opacity-40 grayscale pointer-events-none bg-gray-100 text-gray-400"
+                      }
+                    `}
+                    style={{
+                      backgroundColor:
+                        selectedRows.size > 0
+                          ? button.color || "#4f46e5"
+                          : undefined,
+                      color: selectedRows.size > 0 ? "white" : undefined,
+                    }}
+                  >
+                    {button.icon}
+                    {button.tooltip}
+                  </button>
+                ))}
+                {selectedRows.size > 0 && (
+                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full animate-pulse">
+                    {selectedRows.size} Selected
+                  </span>
+                )}
+              </div>
+              {/* Pagination */}
+              {pagination && (
+                <Pagination config={pagination} />
+              )}
+              {informationElement && (
+                <div className="text-sm font-medium text-gray-500 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
+                  {informationElement}
+                </div>
+              )}
             </div>
           )}
         </div>

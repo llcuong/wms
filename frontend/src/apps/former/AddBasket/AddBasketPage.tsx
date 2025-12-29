@@ -5,7 +5,9 @@ import { Input } from "@components/formControls/Input";
 import { DatePicker } from "@components/formControls/DatePicker";
 import { Dropdown } from "@components/formControls/Dropdown";
 import { Edit, PlusCircle } from "lucide-react";
-import { Table, TableHeader } from "@components/formControls/CustomTable";
+import { PaginationConfig, Table, TableHeader } from "@components/formControls/CustomTable";
+import { useToast } from "@components/toast";
+import { useModal } from "@components/modal";
 
 interface BasketData {
   [key: string]: unknown;
@@ -28,6 +30,12 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 const AddBasketPage: PageNavigatorComponent = (props) => {
+  // --- Toast ---
+  const { addToast } = useToast();
+
+  // --- Modal ---
+  const { showModal } = useModal();
+
   // --- Form States ---
   const [purchaseOrder, setPurchaseOrder] = useState("");
   const [brand, setBrand] = useState<string | undefined>(undefined);
@@ -80,17 +88,62 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
       }, 0);
       return () => clearTimeout(timeoutId);
     }
+  }, [
+    purchaseOrder,
+    brand,
+    receiveQty,
+    debouncedQty,
+    basketWidth,
+    plantCode,
+    note,
+  ]);
 
-  }, [purchaseOrder, brand, receiveQty , debouncedQty, basketWidth, plantCode, note]);
-
-  // --- Table & Guide States ---
+  // --- Table & Pagination States ---
   const [tableData, setTableData] = useState<BasketData[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const paginatedData = tableData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // --- Pagination Configuration ---
+  const paginationConfig: PaginationConfig = {
+    currentPage: currentPage,
+    itemsPerPage: itemsPerPage,
+    totalItems: tableData.length,
+    onPageChange: (page: number) => {
+      setCurrentPage(page);
+    },
+    onItemsPerPageChange: (perPage: number) => {
+      setItemsPerPage(perPage);
+      setCurrentPage(1); // Reset to first page
+    },
+    itemsPerPageOptions: [5, 10, 25, 50, 100]
+  };
+
+  useEffect(() => {
+    setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+  }, [tableData.length]);
 
   // --- Logic: Generate Rows ---
   const handleAdd = () => {
     if (!purchaseOrder || !brand || !receiveQty) {
-      alert("Please fill in all required fields.");
+      addToast("Please fill in all required fields", "warning");
       return;
+    }
+
+    if (tableData) {
+      showModal({
+        type: "confirm",
+        title: "Delete Former?",
+        content: "This action cannot be undone.",
+        confirmText: "Delete",
+        onConfirm: () => console.log("Deleted"),
+      });
     }
 
     const qty = parseInt(receiveQty);
@@ -111,6 +164,8 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
     }));
 
     setTableData([...tableData, ...newRows]);
+
+    addToast("Basket added successfully", "success");
   };
 
   const tableHeaders: TableHeader<BasketData>[] = [
@@ -162,7 +217,6 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
                 required
                 placeholder="Enter brand"
                 isFocus={focusField === "brand"}
-                isTyping={true}
                 isSearch={true}
                 disabled={purchaseOrder.length < 10}
                 value={brand}
@@ -208,12 +262,14 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
                 label="Basket width"
                 required
                 isFocus={focusField === "width"}
-                isTyping={true}
                 isSearch={true}
                 disabled={!receiveQty}
                 value={basketWidth}
                 options={[{ label: "Standard", value: "std" }]}
-                onChange={(v) => {setBasketWidth(v); setFocusField("plant")}}
+                onChange={(v) => {
+                  setBasketWidth(v);
+                  setFocusField("plant");
+                }}
               />
             </div>
 
@@ -257,7 +313,10 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
                 isSearch={true}
                 disabled={!basketWidth}
                 value={plantCode}
-                onChange={(v: string) => {setPlantCode(v); setFocusField("note")}}
+                onChange={(v: string) => {
+                  setPlantCode(v);
+                  setFocusField("note");
+                }}
               />
             </div>
 
@@ -304,12 +363,13 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
         </div>
 
         <Table<BasketData>
-          data={tableData}
+          data={paginatedData}
           headers={tableHeaders}
           isCheckbox={true}
           isDivided={true}
           width="100%"
           maxHeight="45vh"
+          pagination={paginationConfig}
           informationElement={
             <div className="font-bold uppercase text-xs tracking-wider text-gray-500">
               Total items:{" "}

@@ -1,20 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, X, Check, Search } from 'lucide-react';
-import { BaseControlProps, DropdownOption, DropdownAction } from './types';
+import React, { useState, useRef, useEffect } from "react";
+import { ChevronDown, X, Check, Search } from "lucide-react";
+import { BaseControlProps, DropdownOption, DropdownAction } from "./types";
 
 interface DropdownProps extends BaseControlProps {
   value?: string;
   onChange: (value: string) => void;
   options: DropdownOption[];
-  isSearch?: boolean; 
-  isTyping?: boolean; 
+  isSearch?: boolean;
+  isTyping?: boolean;
   exFunctions?: DropdownAction[];
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
   label,
-  placeholder = 'Select or typing...',
-  value = '',
+  placeholder = "Select or typing...",
+  value = "",
   onChange,
   options = [],
   disabled = false,
@@ -22,36 +22,40 @@ export const Dropdown: React.FC<DropdownProps> = ({
   isSearch = false,
   isTyping = false,
   exFunctions = [],
-  error = '',
-  className = '',
-  isFocus = false
+  error = "",
+  className = "",
+  isFocus = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isFocus && !disabled && inputRef.current) {
-      inputRef.current.focus();
-      const timeoutId = setTimeout(() => {
-        setIsOpen(true);
-      }, 0);
+    if (!isFocus || disabled) return;
 
-      return () => clearTimeout(timeoutId);
+    setTimeout(() => {
+      setIsOpen(true);
+    }, 0);
+    
+    if (isTyping && inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [isFocus, disabled]);
+  }, [isFocus, disabled, isTyping]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
-        setSearchTerm('');
+        setSearchTerm("");
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Helper to find the label associated with a value
@@ -60,16 +64,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
     return option ? option.label : val;
   };
 
-  // Filter logic: 
-  const filteredOptions = options.filter(option => {
+  // Filter logic:
+  const filteredOptions = options.filter((option) => {
     const searchTarget = isTyping ? getLabelFromValue(value) : searchTerm;
     return option.label.toLowerCase().includes(searchTarget.toLowerCase());
   });
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange('');
-    setSearchTerm('');
+    onChange("");
+    setSearchTerm("");
   };
 
   return (
@@ -80,18 +84,19 @@ export const Dropdown: React.FC<DropdownProps> = ({
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
-      
+
       <div className="relative">
         <div
           onClick={() => !disabled && setIsOpen(true)}
           className={`
             px-3 py-2 rounded-lg border transition-all duration-200 flex items-center justify-between gap-2
-            ${disabled 
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
-              : 'bg-white text-gray-900 border-gray-300 hover:border-gray-400 cursor-pointer'
+            ${
+              disabled
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                : "bg-white text-gray-900 border-gray-300 hover:border-gray-400 cursor-pointer"
             }
-            ${error ? 'border-red-500' : ''}
-            ${isOpen && !disabled ? 'border-blue-500 ring-2 ring-blue-100' : ''}
+            ${error ? "border-red-500" : ""}
+            ${isOpen && !disabled ? "border-blue-500 ring-2 ring-blue-100" : ""}
             outline-none text-sm
           `}
         >
@@ -107,10 +112,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
               placeholder={placeholder}
               disabled={disabled}
               className="flex-1 outline-none bg-transparent cursor-text"
-              onClick={(e) => {e.stopPropagation(); setIsOpen(true)}} 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(true);
+              }}
             />
           ) : (
-            <span tabIndex={disabled ? -1 : 0} className={`flex-1 ${value ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span
+              tabIndex={disabled ? -1 : 0}
+              className={`flex-1 ${value ? "text-gray-900" : "text-gray-400"}`}
+            >
               {getLabelFromValue(value) || placeholder}
             </span>
           )}
@@ -120,7 +131,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
               <button
                 key={idx}
                 type="button"
-                onClick={(e) => { e.stopPropagation(); func.onClick(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  func.onClick();
+                }}
                 disabled={disabled}
                 className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 cursor-pointer"
               >
@@ -136,8 +150,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 <X className="w-4 h-4 text-gray-400" />
               </button>
             )}
-            <ChevronDown 
-              className={`w-4 h-4 text-gray-400 transition-transform cursor-pointer ${isOpen ? 'rotate-180' : ''}`} 
+            <ChevronDown
+              className={`w-4 h-4 text-gray-400 transition-transform cursor-pointer ${
+                isOpen ? "rotate-180" : ""
+              }`}
               onClick={(e) => {
                 if (!disabled) {
                   e.stopPropagation();
@@ -150,7 +166,6 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
         {isOpen && !disabled && (
           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden flex flex-col">
-            
             {isSearch && !isTyping && (
               <div className="p-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
                 <Search className="w-4 h-4 text-gray-400" />
@@ -174,11 +189,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
                     onClick={() => {
                       onChange(option.value); // Sends the VALUE to the parent
                       setIsOpen(false);
-                      setSearchTerm('');
+                      setSearchTerm("");
                     }}
                     className={`
                       px-3 py-2 cursor-pointer transition-colors text-sm flex items-center justify-between
-                      ${value === option.value ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}
+                      ${
+                        value === option.value
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }
                     `}
                   >
                     <span>{option.label}</span>
