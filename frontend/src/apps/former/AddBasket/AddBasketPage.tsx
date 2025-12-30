@@ -4,8 +4,13 @@ import type { PageNavigatorComponent } from "@routes/types";
 import { Input } from "@components/formControls/Input";
 import { DatePicker } from "@components/formControls/DatePicker";
 import { Dropdown } from "@components/formControls/Dropdown";
-import { Edit, PlusCircle } from "lucide-react";
-import { PaginationConfig, Table, TableHeader } from "@components/formControls/CustomTable";
+import { Edit, PlusCircle, FileDown, Printer } from "lucide-react";
+import {
+  PaginationConfig,
+  Table,
+  TableHeader,
+  ActionButton,
+} from "@components/formControls/CustomTable";
 import { useToast } from "@components/toast";
 import { useModal } from "@components/modal";
 
@@ -102,6 +107,43 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
   const [tableData, setTableData] = useState<BasketData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  // const [pageData, setPageData] = useState<BasketData[]>([]);
+  // const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
+
+  function fileDownload(rows: BasketData[]) {
+    console.log("Selected rows:", rows);
+
+    showModal({
+      type: "success",
+      title: "Download Excel file",
+      content: `Excel file downloaded with ${rows.length} items successfully!`,
+    });
+  }
+
+  function printRFIDTags(rows: BasketData[]) {
+    console.log("Selected rows:", rows);
+
+    showModal({
+      type: "success",
+      title: "Print RFID tags",
+      content: `${rows.length} RFID tags printed successfully!`,
+    });
+  }
+
+  const actionButtons: ActionButton<BasketData>[] = [
+    {
+      icon: <Printer />,
+      tooltip: "Print RFID Tags",
+      onClick: printRFIDTags,
+      disabled: false,
+    },
+    {
+      icon: <FileDown />,
+      color: "#00a944",
+      tooltip: "Download Excel",
+      onClick: fileDownload,
+    },
+  ];
 
   const paginatedData = tableData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -109,18 +151,47 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
   );
 
   // --- Pagination Configuration ---
+  
+  // const handlePageChange = async (page: number) => {
+  //   setCurrentPage(page);
+
+  //   if (loadedPages.has(page)) {
+  //     // Already fetched → just slice
+  //     setPageData(
+  //       tableData.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+  //     );
+  //     return;
+  //   }
+
+  //   Fetch new page
+  //   const response = await fetchBaskets({ page, size: itemsPerPage });
+
+  //   setFullData((prev) => {
+  //     const merged = [...prev, ...response.items];
+
+  //     // Deduplicate by key
+  //     return Array.from(
+  //       new Map(merged.map((item) => [item.basket_no, item])).values()
+  //     );
+  //   });
+
+  //   setLoadedPages((prev) => new Set(prev).add(page));
+  //   setPageData(response.items);
+  // };
+
   const paginationConfig: PaginationConfig = {
     currentPage: currentPage,
     itemsPerPage: itemsPerPage,
     totalItems: tableData.length,
     onPageChange: (page: number) => {
-      setCurrentPage(page);
+      setCurrentPage(page)
+      // handlePageChange(page)
     },
     onItemsPerPageChange: (perPage: number) => {
       setItemsPerPage(perPage);
-      setCurrentPage(1); // Reset to first page
+      setCurrentPage(1);
     },
-    itemsPerPageOptions: [5, 10, 25, 50, 100]
+    itemsPerPageOptions: [5, 10, 25, 50, 100],
   };
 
   useEffect(() => {
@@ -364,11 +435,14 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
 
         <Table<BasketData>
           data={paginatedData}
+          fullData={tableData}
+          rowKey={"basket_no"}
           headers={tableHeaders}
           isCheckbox={true}
           isDivided={true}
           width="100%"
           maxHeight="45vh"
+          actionButtons={actionButtons}
           pagination={paginationConfig}
           informationElement={
             <div className="font-bold uppercase text-xs tracking-wider text-gray-500">

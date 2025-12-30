@@ -29,6 +29,7 @@ export interface PaginationConfig {
   currentPage: number;
   itemsPerPage: number;
   totalItems: number;
+  paginationInfo?: boolean;
   onPageChange: (page: number) => void;
   onItemsPerPageChange?: (itemsPerPage: number) => void;
   itemsPerPageOptions?: number[];
@@ -36,6 +37,8 @@ export interface PaginationConfig {
 
 export interface TableProps<T> {
   data: T[];
+  fullData?: T[];
+  rowKey: keyof T | ((row: T) => string);
   headers: TableHeader<T>[];
   isCheckbox?: boolean;
   isAutoId?: boolean;
@@ -51,7 +54,6 @@ export interface TableProps<T> {
   pagination?: PaginationConfig;
 }
 
-// Modern Checkbox Component for reuse
 const CustomCheckbox = ({
   checked,
   onChange,
@@ -81,12 +83,12 @@ const CustomCheckbox = ({
   </div>
 );
 
-// Pagination Component
 const Pagination = ({ config }: { config: PaginationConfig }) => {
   const {
     currentPage,
     itemsPerPage,
     totalItems,
+    paginationInfo = false,
     onPageChange,
     onItemsPerPageChange,
     itemsPerPageOptions = [10, 25, 50, 100],
@@ -156,11 +158,13 @@ const Pagination = ({ config }: { config: PaginationConfig }) => {
       )}
 
       {/* Page info */}
-      <div className="text-sm text-gray-600 font-medium">
-        Showing <span className="text-indigo-600">{startItem}</span> to{" "}
-        <span className="text-indigo-600">{endItem}</span> of{" "}
-        <span className="text-indigo-600">{totalItems}</span> results
-      </div>
+      {paginationInfo && (
+        <div className="text-sm text-gray-600 font-medium">
+          Showing <span className="text-indigo-600">{startItem}</span> to{" "}
+          <span className="text-indigo-600">{endItem}</span> of{" "}
+          <span className="text-indigo-600">{totalItems}</span> results
+        </div>
+      )}
 
       {/* Page navigation */}
       <div className="flex items-center gap-1">
@@ -240,6 +244,8 @@ const Pagination = ({ config }: { config: PaginationConfig }) => {
 
 export function Table<T extends Record<string, unknown>>({
   data = [],
+  rowKey,
+  fullData,
   headers = [],
   isCheckbox = false,
   isAutoId = false,
@@ -254,7 +260,7 @@ export function Table<T extends Record<string, unknown>>({
   isDivided,
   pagination,
 }: TableProps<T>) {
-  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [sortConfig, setSortConfig] = useState<{
     key: keyof T;
     direction: "asc" | "desc";
@@ -274,6 +280,10 @@ export function Table<T extends Record<string, unknown>>({
     });
   }, [data, sortConfig]);
 
+  const getRowId = (row: T): string => {
+    return typeof rowKey === "function" ? rowKey(row) : String(row[rowKey]);
+  };
+
   const handleSort = (dataKey: keyof T) => {
     setSortConfig((current) => {
       if (!current || current.key !== dataKey)
@@ -284,23 +294,49 @@ export function Table<T extends Record<string, unknown>>({
     });
   };
 
+  const pageRowIds = sortedData.map(getRowId);
+
+  // const handleSelectAll = () => {
+  //   const allSelected = pageRowIds.every((id) => selectedRows.has(id));
+
+  //   const newSelected = new Set(selectedRows);
+
+  //   if (allSelected) {
+  //     pageRowIds.forEach((id) => newSelected.delete(id));
+  //   } else {
+  //     pageRowIds.forEach((id) => newSelected.add(id));
+  //   }
+
+  //   setSelectedRows(newSelected);
+  // };
+
   const handleSelectAll = () => {
-    if (selectedRows.size === data.length) {
+    const source = fullData ?? data;
+    const allRowIds = source.map((row) => getRowId(row));
+
+    const allSelected = allRowIds.every((id) => selectedRows.has(id));
+
+    if (allSelected) {
       setSelectedRows(new Set());
     } else {
-      setSelectedRows(new Set(data.map((_, index) => index)));
+      setSelectedRows(new Set(allRowIds));
     }
   };
 
-  const handleSelectRow = (index: number) => {
+  const handleSelectRow = (row: T) => {
+    const id = getRowId(row);
     const newSelected = new Set(selectedRows);
-    if (newSelected.has(index)) newSelected.delete(index);
-    else newSelected.add(index);
+
+    if (newSelected.has(id)) newSelected.delete(id);
+    else newSelected.add(id);
+
     setSelectedRows(newSelected);
   };
 
-  const getSelectedRowsData = (): T[] =>
-    Array.from(selectedRows).map((index) => data[index]);
+  const getSelectedRowsData = (): T[] => {
+    const source = fullData ?? data;
+    return source.filter((row) => selectedRows.has(getRowId(row)));
+  };
 
   const renderSortIcon = (header: TableHeader<T>) => {
     if (!header.isSortable) return null;
@@ -316,7 +352,6 @@ export function Table<T extends Record<string, unknown>>({
     );
   };
 
-  // Calculate row number offset for auto ID when pagination is enabled
   const getRowNumber = (rowIndex: number) => {
     if (pagination) {
       return (
@@ -345,12 +380,14 @@ export function Table<T extends Record<string, unknown>>({
                 <th className="px-5 py-4 text-left w-14 bg-slate-800">
                   <CustomCheckbox
                     checked={
-                      selectedRows.size === data.length && data.length > 0
+                      pageRowIds.length > 0 &&
+                      pageRowIds.every((id) => selectedRows.has(id))
+                    }
+                    indeterminate={
+                      pageRowIds.some((id) => selectedRows.has(id)) &&
+                      !pageRowIds.every((id) => selectedRows.has(id))
                     }
                     onChange={handleSelectAll}
-                    indeterminate={
-                      selectedRows.size > 0 && selectedRows.size < data.length
-                    }
                   />
                 </th>
               )}
@@ -408,53 +445,57 @@ export function Table<T extends Record<string, unknown>>({
                 </td>
               </tr>
             ) : (
-              sortedData.map((row, rowIndex) => (
-                <tr
-                  key={rowIndex}
-                  onClick={() => onRowClick?.(row)}
-                  className={`
+              sortedData.map((row, rowIndex) => {
+                const rowId = getRowId(row);
+
+                return (
+                  <tr
+                    key={rowId}
+                    onClick={() => onRowClick?.(row)}
+                    className={`
                     transition-colors group
                     ${
-                      selectedRows.has(rowIndex)
+                      selectedRows.has(rowId)
                         ? "bg-indigo-50/50"
                         : "hover:bg-gray-50"
                     }
                     ${isDivided ? "border-b border-gray-100" : ""}
                   `}
-                >
-                  {isCheckbox && (
-                    <td
-                      className={`px-5 py-3 ${
-                        isDivided ? "border-b border-gray-100" : ""
-                      }`}
-                    >
-                      <CustomCheckbox
-                        checked={selectedRows.has(rowIndex)}
-                        onChange={() => handleSelectRow(rowIndex)}
-                      />
-                    </td>
-                  )}
-                  {isAutoId && (
-                    <td
-                      className={`px-5 py-3 text-sm text-gray-400 font-medium ${
-                        isDivided ? "border-b border-gray-100" : ""
-                      }`}
-                    >
-                      {getRowNumber(rowIndex)}
-                    </td>
-                  )}
-                  {headers.map((h, ci) => (
-                    <td
-                      key={ci}
-                      className={`px-5 py-3 text-sm text-gray-700 ${
-                        isDivided ? "border-b border-gray-100" : ""
-                      }`}
-                    >
-                      {String(row[h.dataKey] ?? "-")}
-                    </td>
-                  ))}
-                </tr>
-              ))
+                  >
+                    {isCheckbox && (
+                      <td
+                        className={`px-5 py-3 ${
+                          isDivided ? "border-b border-gray-100" : ""
+                        }`}
+                      >
+                        <CustomCheckbox
+                          checked={selectedRows.has(getRowId(row))}
+                          onChange={() => handleSelectRow(row)}
+                        />
+                      </td>
+                    )}
+                    {isAutoId && (
+                      <td
+                        className={`px-5 py-3 text-sm text-gray-400 font-medium ${
+                          isDivided ? "border-b border-gray-100" : ""
+                        }`}
+                      >
+                        {getRowNumber(rowIndex)}
+                      </td>
+                    )}
+                    {headers.map((h, ci) => (
+                      <td
+                        key={ci}
+                        className={`px-5 py-3 text-sm text-gray-700 ${
+                          isDivided ? "border-b border-gray-100" : ""
+                        }`}
+                      >
+                        {String(row[h.dataKey] ?? "-")}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -464,8 +505,8 @@ export function Table<T extends Record<string, unknown>>({
       {(actionButtons.length > 0 || informationElement || pagination) && (
         <div className="sticky bottom-0 z-20 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
           {/* Action buttons and info */}
-          {(actionButtons.length > 0 || informationElement) && (
-            <div className="flex items-center justify-between gap-4 p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between gap-4 p-4 border-b border-gray-100">
+            {actionButtons.length > 0 && (
               <div className="flex items-center gap-3">
                 {actionButtons.map((button, index) => (
                   <button
@@ -498,17 +539,16 @@ export function Table<T extends Record<string, unknown>>({
                   </span>
                 )}
               </div>
-              {/* Pagination */}
-              {pagination && (
-                <Pagination config={pagination} />
-              )}
-              {informationElement && (
-                <div className="text-sm font-medium text-gray-500 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-                  {informationElement}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+
+            {/* Pagination */}
+            {pagination && <Pagination config={pagination} />}
+            {informationElement && (
+              <div className="text-sm font-medium text-gray-500 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
+                {informationElement}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
