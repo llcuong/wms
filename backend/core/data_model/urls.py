@@ -69,4 +69,5 @@ urlpatterns = [
     path('get-mapping-account-special-permission-by-id/<int:id>/', views.get_mapping_account_special_permission_by_id, name='get_mapping_account_special_permission_by_id'),
     path('mapping-account-special-permission/<int:id>/update/', views.patch_mapping_account_special_permission, name='patch_mapping_account_special_permission'),
     path('mapping-account-special-permission/<int:id>/delete/', views.delete_mapping_account_special_permission, name='delete_mapping_account_special_permission'),
+    path('get-factory-tree/', views.get_factory_tree, name='get_factory_tree'),
 ]

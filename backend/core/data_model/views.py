@@ -15,7 +15,7 @@ from .serializers import *
     responses=PostDmFactoryCreateSerializer
 )
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def post_create_factory(request):
     """
     Create a new factory.
@@ -56,7 +56,7 @@ def post_create_factory(request):
     responses=GetDmFactoryByCodeSerializer
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_factory_by_code(request):
     """
     Retrieve a factory by its code.
@@ -97,7 +97,7 @@ def get_factory_by_code(request):
     responses=GetDmFactoryListSerializer(many=True)
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_factory_list(request):
     """
     Retrieve the list of all factories.
@@ -140,7 +140,7 @@ def get_factory_list(request):
     }
 )
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def post_create_branch(request):
     """
     Create a new branch under a factory.
@@ -191,7 +191,7 @@ def post_create_branch(request):
     responses=GetDmBranchByIdSerializer
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_branch_by_id(request, id):
     """
     Retrieve a branch by its ID.
@@ -227,7 +227,7 @@ def get_branch_by_id(request, id):
     responses=GetDmBranchListSerializer(many=True)
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_branch_list(request):
     """
     Retrieve the list of all branches.
@@ -277,7 +277,7 @@ def get_branch_list(request):
     }
 )
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def post_create_machine(request):
     """
     Create a new machine under a branch.
@@ -328,7 +328,7 @@ def post_create_machine(request):
     responses=GetDmMachineByIdSerializer
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_machine_by_id(request, id):
     """
     Retrieve a machine by its ID.
@@ -363,7 +363,7 @@ def get_machine_by_id(request, id):
     responses=GetDmMachineListSerializer(many=True)
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_machine_list(request):
     """
     Retrieve the list of all machines.
@@ -391,7 +391,7 @@ def get_machine_list(request):
 # post_create_machine_line Swagger
 @extend_schema(
     tags=["DmMachineLine"],
-    request=PostDmMachineLineCreateSerializer,  # tạo form input cho tất cả field
+    request=PostDmMachineLineCreateSerializer,  # create input form for all fields
     responses={
         201: {
             "type": "object",
@@ -411,7 +411,7 @@ def get_machine_list(request):
     }
 )
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def post_create_machine_line(request):
     """
     Create a new machine line under a machine.
@@ -462,7 +462,7 @@ def post_create_machine_line(request):
     responses=GetDmMachineLineByIdSerializer
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_machine_line_by_id(request, id):
     """
     Retrieve a machine line by its ID.
@@ -497,7 +497,7 @@ def get_machine_line_by_id(request, id):
     responses=GetDmMachineLineListSerializer(many=True)
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_machine_line_list(request):
     """
     Retrieve the list of all machine lines.
@@ -1043,7 +1043,7 @@ def post_create_app_name(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check duplicate app_code (optional – unique đã có ở DB)
+    # Check duplicate app_code
     if DmAppName.objects.filter(app_code=serializer.validated_data["app_code"]).exists():
         return Response(
             {"error": "app_code already exists"},
@@ -1218,7 +1218,7 @@ def update_app_name(request, app_id):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # check duplicate app_code nếu có update
+    # check duplicate app_code if having update
     new_app_code = serializer.validated_data.get("app_code")
     if new_app_code:
         if DmAppName.objects.exclude(app_id=app_id).filter(app_code=new_app_code).exists():
@@ -1896,7 +1896,7 @@ def post_create_role(request):
             }
     """
     # data = request.data.copy()
-    # data['created_by'] = request.user.id  # set user tạo
+    # data['created_by'] = request.user.id  # set user create
     serializer = DmRolesSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         serializer.save()
@@ -2841,3 +2841,32 @@ def delete_mapping_account_special_permission(request, id):
 
     mapping.delete()
     return Response(status=204)
+
+# get_factory_tree Swagger
+@extend_schema(
+    summary="Get factory tree",
+    description=(
+        "Get the list of Factories in a tree structure:\n\n"
+        "- Factory → Branch → Machine → MachineLine\n"
+        "- The `children` field contains the corresponding list of child items\n"
+        "- If there are no children, `children = null`\n"
+    ),
+    responses={
+        200: OpenApiResponse(
+            response=DmFactoryTreeSerializer(many=True),
+            description="Factory tree data"
+        ),
+        401: OpenApiResponse(description="Unauthorized")
+    },
+    tags=["Factory Tree"]
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_factory_tree(request):
+    """
+    Get factory tree:
+    Factory -> Branch -> Machine -> MachineLine
+    """
+    factories = DmFactory.objects.all()
+    serializer = DmFactoryTreeSerializer(factories, many=True)
+    return Response(serializer.data)

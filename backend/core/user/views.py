@@ -7,13 +7,14 @@ from django.db import transaction
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 
 from .models import UserAccounts, UserCustomUsers
-from .serializers import PostLoginAccountSerializer, PostCreateUserSerializer, PostCreateAccountSerializer, GetUserListSerializer, PostLogoutAccountSerializer, RefreshAccessTokenResponseSerializer, ChangePasswordSerializer
+from .serializers import *
 # from .tokens import get_tokens_for_user
 from .utils import get_tokens_for_user, verify_refresh_token, generate_access_token
 
 #get_user_list Swagger
 @extend_schema(
-    responses=GetUserListSerializer(many=True)
+    responses=GetUserListSerializer(many=True),
+    tags=["User"]
 )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -65,6 +66,7 @@ def get_user_list(request):
 
 #post_login_account Swagger
 @extend_schema(
+    tags=["Auth"],
     request=PostLoginAccountSerializer,
     responses={
         200: {
@@ -228,6 +230,7 @@ def post_login_account(request):
 
 # post_logout_account Swagger
 @extend_schema(
+    tags=["Auth"],
     summary="Logout user",
     description="Invalidate access tokens and refresh token stored in HTTP Only cookie.",
     responses={
@@ -274,6 +277,7 @@ def post_logout_account(request):
 
 #post_create_user Swagger
 @extend_schema(
+    tags=["User"],
     request=PostCreateUserSerializer,
     responses={
         201: {
@@ -328,6 +332,7 @@ def post_create_user(request):
 
 #post_create_account Swagger
 @extend_schema(
+    tags=["User"],
     request=PostCreateAccountSerializer,
     responses={
         201: {
@@ -408,6 +413,7 @@ def post_create_account(request):
 
 # refresh_access_token Swagger
 @extend_schema(
+    tags=["Auth"],
     summary="Refresh access token",
     description=(
         "Refresh the access token using HTTP Only refresh token stored in cookie.\n"
@@ -424,7 +430,7 @@ def post_create_account(request):
     }
 )
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def post_refresh_access_token(request):
     refresh_token = request.COOKIES.get('refresh_token')
 
@@ -449,12 +455,12 @@ def post_refresh_access_token(request):
             "error": "Invalid or expired refresh token"
         }, status=status.HTTP_401_UNAUTHORIZED)
 
-# change_password Swagger
+# change_account_password Swagger
 @extend_schema(
-    tags=["user"],
+    tags=["User"],
     summary="Change password",
     description="Change password for current authenticated user.",
-    request=ChangePasswordSerializer,
+    request=ChangeAccountPasswordSerializer,
     responses={
         200: OpenApiResponse(description="Password changed successfully"),
         400: OpenApiResponse(description="Invalid input or wrong old password"),
@@ -477,7 +483,7 @@ def post_change_account_password(request):
     - new_password and confirm_password must match
     - token_version will be increased (force re-login)
     """
-    serializer = ChangePasswordSerializer(data=request.data)
+    serializer = ChangeAccountPasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
     user: UserCustomUsers = request.user
@@ -508,3 +514,155 @@ def post_change_account_password(request):
         {"message": "Password changed successfully"},
         status=status.HTTP_200_OK
     )
+
+# patch_user_account Swagger
+@extend_schema(
+    tags=["User"],
+    request=UpdateUserAccountSerializer,
+    responses={
+        200: {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string", "example": "Account updated successfully"}
+            }
+        },
+        400: {
+            "type": "object",
+            "properties": {
+                "account_password": {"type": "array", "items": {"type": "string"}},
+                "account_last_login": {"type": "array", "items": {"type": "string"}},
+                "account_token_version": {"type": "array", "items": {"type": "string"}}
+            },
+            "example": {
+                "account_password": ["This field may not be blank."],
+            }
+        },
+        404: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string", "example": "Account not found"}
+            }
+        }
+    },
+    description="Update safe fields of UserAccount: password, token_version, last_login. account_id is not updated to prevent FK errors."
+)
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def patch_user_account(request, account_id):
+    """
+    Safely update a UserAccount by account_id.
+    Path Parameters:
+        account_id (string): ID of the UserAccount to be updated.
+    Request Body (partial):
+        {
+            "account_password": "string",
+            "account_last_login": "YYYY-MM-DDTHH:MM:SSZ",
+            "account_token_version": "integer"
+        }
+    Responses:
+        200 OK:
+            Account updated successfully.
+            {
+                "message": "Account updated successfully"
+            }
+    """
+    try:
+        account = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"error": "Account not found"}, status=404)
+
+    serializer = UpdateUserAccountSerializer(account, data=request.data, partial=True, context={'request': request})
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Account updated successfully"}, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# delete_user_account Swagger
+@extend_schema(
+    tags=["User"],
+    parameters=[
+        OpenApiParameter(
+            name='account_id',
+            description='ID of the user account to delete',
+            required=True,
+            type=str,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        204: {'description': 'Account deleted successfully with cascade on related tables'},
+        404: {'description': 'Account not found'}
+    },
+    description="Delete a UserAccount by its account_id. Cascade deletes all related FK records."
+)
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_user_account(request, account_id):
+    """
+    Delete a UserAccount by account_id with cascade on related tables.
+    """
+    try:
+        account = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"error": "Account not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    account.delete()
+    return Response({"message": "Account deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+# patch_user_custom_user Swagger
+@extend_schema(
+    tags=["User"],
+    request=UpdateUserCustomUserSerializer,
+    responses={
+        200: {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string", "example": "UserCustomUser updated successfully"}
+            }
+        },
+        400: {
+            "type": "object",
+            "example": {
+                "user_email": ["Enter a valid email address."]
+            }
+        },
+        404: {
+            "type": "object",
+            "properties": {
+                "error": {"type": "string", "example": "UserCustomUser not found"}
+            }
+        }
+    },
+    description="Update the safe fields of UserCustomUser. Do not update user_account.user_id to avoid breaking foreign key constraints."
+)
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def patch_user_custom_user(request, user_id):
+    """
+    Safely update a UserCustomUser by user_id.
+    Path Parameters:
+        user_id (string): ID of the UserCustomUser to be updated.
+    Request Body (partial):
+        {
+            "user_name": "string",
+            "user_full_name": "string",
+            "user_email": "string",
+            "user_status": "integer"
+        }
+    Responses:
+        200 OK:
+            UserCustomUser updated successfully.
+            {
+                "message": "UserCustomUser updated successfully"
+            }
+    """
+    try:
+        user = UserCustomUsers.objects.get(user_id=user_id)
+    except UserCustomUsers.DoesNotExist:
+        return Response({"error": "UserCustomUser not found"}, status=404)
+
+    serializer = UpdateUserCustomUserSerializer(user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "UserCustomUser updated successfully"}, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

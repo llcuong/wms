@@ -558,3 +558,98 @@ class DmMappingAccountSpecialPermissionSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             validated_data['updated_by'] = request.user.id
         return super().update(instance, validated_data)
+
+class DmMachineLineTreeSerializer(serializers.ModelSerializer):
+    """Serializer representing a **Line** node in a tree structure."""
+    type = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmMachineLine
+        fields = [
+            "id",
+            "type",
+            "line_code",
+            "line_name",
+            "children",
+        ]
+
+    def get_type(self, obj):
+        return "line"
+
+    def get_children(self, obj):
+        return None
+
+
+class DmMachineTreeSerializer(serializers.ModelSerializer):
+    """Serializer representing a **Machine** node in a tree structure."""
+    type = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmMachine
+        fields = [
+            "id",
+            "type",
+            "machine_code",
+            "machine_name",
+            "children",
+        ]
+
+    def get_type(self, obj):
+        return "machine"
+
+    def get_children(self, obj):
+        qs = DmMachineLine.objects.filter(machine_code=obj.machine_code)
+        if not qs.exists():
+            return None
+        return DmMachineLineTreeSerializer(qs, many=True).data
+
+class DmBranchTreeSerializer(serializers.ModelSerializer):
+    """Serializer representing a **Branch** node in a tree structure."""
+    type = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmBranch
+        fields = [
+            "id",
+            "type",
+            "branch_code",
+            "branch_name",
+            "branch_type",
+            "children",
+        ]
+
+    def get_type(self, obj):
+        return "branch"
+
+    def get_children(self, obj):
+        qs = DmMachine.objects.filter(branch_code=obj.branch_code)
+        if not qs.exists():
+            return None
+        return DmMachineTreeSerializer(qs, many=True).data
+
+class DmFactoryTreeSerializer(serializers.ModelSerializer):
+    """Serializer representing a **Factory** node in a tree structure."""
+    type = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmFactory
+        fields = [
+            "type",
+            "factory_code",
+            "factory_name",
+            "children",
+        ]
+
+    def get_type(self, obj):
+        return "factory"
+
+    def get_children(self, obj):
+        qs = DmBranch.objects.filter(factory_code=obj.factory_code)
+        if not qs.exists():
+            return None
+        return DmBranchTreeSerializer(qs, many=True).data
+

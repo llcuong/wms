@@ -3,6 +3,7 @@ from .models import UserCustomUsers, UserStatus
 
 
 class PostLoginAccountSerializer(serializers.Serializer):
+    """Serializer for login request."""
     account_id = serializers.CharField(max_length=255)
     password = serializers.CharField(max_length=255, write_only=True)
 
@@ -16,10 +17,12 @@ class PostLoginAccountSerializer(serializers.Serializer):
         return data
 
 class PostLogoutAccountSerializer(serializers.Serializer):
+    """Serializer for logout request."""
     refresh_token = serializers.CharField(max_length=255)
 
 
 class PostCreateUserSerializer(serializers.ModelSerializer):
+    """Serializer for creating a new user."""
     user_status_id = serializers.PrimaryKeyRelatedField(
         source='user_status',
         queryset=UserStatus.objects.all()
@@ -36,6 +39,7 @@ class PostCreateUserSerializer(serializers.ModelSerializer):
         ]
 
 class PostCreateAccountSerializer(serializers.Serializer):
+    """Serializer for creating a new account."""
     user_id = serializers.CharField(max_length=20)
     account_id = serializers.CharField(max_length=255)
     password = serializers.CharField(write_only=True)
@@ -83,7 +87,8 @@ class RefreshAccessTokenResponseSerializer(serializers.Serializer):
     token_type = serializers.CharField(default="Bearer")
     expires_in = serializers.IntegerField(default=3600)
 
-class ChangePasswordSerializer(serializers.Serializer):
+class ChangeAccountPasswordSerializer(serializers.Serializer):
+    """Serializer for changing account password."""
     old_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)
@@ -94,3 +99,36 @@ class ChangePasswordSerializer(serializers.Serializer):
                 {"confirm_password": "Passwords do not match"}
             )
         return attrs
+
+class UpdateUserAccountSerializer(serializers.Serializer):
+    """
+    Serializer PATCH UserAccounts.
+    """
+    account_password = serializers.CharField(write_only=True, required=False)
+    account_last_login = serializers.DateTimeField(required=False)
+    account_token_version = serializers.IntegerField(required=False)
+
+    def update(self, instance, validated_data):
+        updated_by = self.context.get('request').user.id if self.context.get('request') else None
+        return instance.update_account_safe(updated_by=updated_by, **validated_data)
+
+
+class UpdateUserCustomUserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating UserCustomUsers.
+    """
+    class Meta:
+        model = UserCustomUsers
+        fields = [
+            'user_name',
+            'user_full_name',
+            'user_email',
+            'user_status',
+        ]
+        extra_kwargs = {
+            'user_name': {'required': False},
+            'user_full_name': {'required': False},
+            'user_email': {'required': False},
+            'user_status': {'required': False},
+        }
+

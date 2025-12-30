@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password, make_password
 
@@ -50,6 +50,27 @@ class UserAccounts(models.Model):
         self.last_login = timezone.now()
         self.save(update_fields=['account_last_login'])
 
+    @transaction.atomic
+    def update_account_safe(self, updated_by=None, **kwargs):
+        """
+        Only update the safe fields: account_password, account_last_login, account_token_version.
+        Do not update account_id to avoid foreign key errors.
+        """
+        allowed_fields = {'account_password', 'account_last_login', 'account_token_version'}
+        for field, value in kwargs.items():
+            if field not in allowed_fields:
+                continue  # ignore other fields
+            if field == 'account_password':
+                self.set_password(value)
+            else:
+                setattr(self, field, value)
+
+        if updated_by is not None:
+            self.updated_by = updated_by
+
+        self.updated_at = timezone.now()
+        self.save()
+        return self
 
 class UserCustomUsers(models.Model):
     user_account = models.OneToOneField(UserAccounts, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_account')

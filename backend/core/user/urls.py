@@ -11,4 +11,7 @@ urlpatterns = [
     path('post-create-account/', views.post_create_account, name='post_create_account'),
     path('post-refresh-access-token/', views.post_refresh_access_token, name='post_refresh_access_token'),
     path('post-change-account-password/', views.post_change_account_password, name='post_change_account_password'),
+    path('patch-user-accounts/<str:account_id>/', views.patch_user_account, name='patch_user_account'),
+    path('delete-user-account/<str:account_id>/', views.delete_user_account, name='delete_user_account'),
+    path('patch-user-custom-user/<str:user_id>/', views.patch_user_custom_user, name='patch_user_custom_user'),
 ]
