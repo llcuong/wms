@@ -30,6 +30,7 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         title={modal.title}
         type={modal.type}
         onConfirm={modal.onConfirm}
+        onCancel={modal.onCancel}
         confirmText={modal.confirmText}
         cancelText={modal.cancelText}
         isLoading={modal.isLoading}

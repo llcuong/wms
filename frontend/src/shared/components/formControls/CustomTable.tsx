@@ -1,4 +1,4 @@
-import { useState, useMemo, ReactNode } from "react";
+import { useState, useMemo, ReactNode, useEffect } from "react";
 import {
   ArrowUpDown,
   ArrowUp,
@@ -44,6 +44,7 @@ export interface TableProps<T> {
   isAutoId?: boolean;
   actionButtons?: ActionButton<T>[];
   informationElement?: ReactNode;
+  onSelectionChange?: (selectedRows: T[]) => void;
   onRowClick?: (row: T) => void;
   className?: string;
   width?: string;
@@ -251,6 +252,7 @@ export function Table<T extends Record<string, unknown>>({
   isAutoId = false,
   actionButtons = [],
   informationElement,
+  onSelectionChange,
   onRowClick,
   className = "",
   width,
@@ -294,6 +296,18 @@ export function Table<T extends Record<string, unknown>>({
     });
   };
 
+  const notifySelectionChange = (nextSelected: Set<string>) => {
+    setSelectedRows(nextSelected);
+
+    if (onSelectionChange) {
+      const source = fullData ?? data;
+      const selectedData = source.filter((row) =>
+        nextSelected.has(getRowId(row))
+      );
+      onSelectionChange(selectedData);
+    }
+  };
+
   const pageRowIds = sortedData.map(getRowId);
 
   // const handleSelectAll = () => {
@@ -312,14 +326,14 @@ export function Table<T extends Record<string, unknown>>({
 
   const handleSelectAll = () => {
     const source = fullData ?? data;
-    const allRowIds = source.map((row) => getRowId(row));
+    const allRowIds = source.map(getRowId);
 
     const allSelected = allRowIds.every((id) => selectedRows.has(id));
 
     if (allSelected) {
-      setSelectedRows(new Set());
+      notifySelectionChange(new Set());
     } else {
-      setSelectedRows(new Set(allRowIds));
+      notifySelectionChange(new Set(allRowIds));
     }
   };
 
@@ -330,8 +344,14 @@ export function Table<T extends Record<string, unknown>>({
     if (newSelected.has(id)) newSelected.delete(id);
     else newSelected.add(id);
 
-    setSelectedRows(newSelected);
+    notifySelectionChange(newSelected);
   };
+
+  useEffect(() => {
+    setTimeout(() => {
+      notifySelectionChange(new Set());
+    }, 0);
+  }, [fullData]);
 
   const getSelectedRowsData = (): T[] => {
     const source = fullData ?? data;

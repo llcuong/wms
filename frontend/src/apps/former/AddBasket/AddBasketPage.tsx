@@ -4,7 +4,7 @@ import type { PageNavigatorComponent } from "@routes/types";
 import { Input } from "@components/formControls/Input";
 import { DatePicker } from "@components/formControls/DatePicker";
 import { Dropdown } from "@components/formControls/Dropdown";
-import { Edit, PlusCircle, FileDown, Printer } from "lucide-react";
+import { PlusCircle, FileDown, Printer, Trash2 } from "lucide-react";
 import {
   PaginationConfig,
   Table,
@@ -106,9 +106,20 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
   // --- Table & Pagination States ---
   const [tableData, setTableData] = useState<BasketData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(96);
+  const [selectedRows, setSelectedRows] = useState<BasketData[]>([]);
   // const [pageData, setPageData] = useState<BasketData[]>([]);
   // const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
+
+  function deleteRows(rows: BasketData[]) {
+    if (rows.length === 0) return;
+
+    const deleteKeys = new Set(rows.map((r) => r.basket_no));
+
+    setTableData((prev) =>
+      prev.filter((row) => !deleteKeys.has(row.basket_no))
+    );
+  }
 
   function fileDownload(rows: BasketData[]) {
     console.log("Selected rows:", rows);
@@ -151,7 +162,7 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
   );
 
   // --- Pagination Configuration ---
-  
+
   // const handlePageChange = async (page: number) => {
   //   setCurrentPage(page);
 
@@ -184,14 +195,14 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
     itemsPerPage: itemsPerPage,
     totalItems: tableData.length,
     onPageChange: (page: number) => {
-      setCurrentPage(page)
+      setCurrentPage(page);
       // handlePageChange(page)
     },
     onItemsPerPageChange: (perPage: number) => {
       setItemsPerPage(perPage);
       setCurrentPage(1);
     },
-    itemsPerPageOptions: [5, 10, 25, 50, 100],
+    itemsPerPageOptions: [50, 96, 200, 500, 1000],
   };
 
   useEffect(() => {
@@ -201,42 +212,53 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
   }, [tableData.length]);
 
   // --- Logic: Generate Rows ---
+
+  function addNewData(reset: boolean = false) {
+    const qty = parseInt(receiveQty);
+
+    setTableData((prev) => {
+      const baseData = reset ? [] : prev;
+
+      const newRows: BasketData[] = Array.from({ length: qty }).map((_, i) => ({
+        basket_no: `${plantCode}251226${String(
+          baseData.length + i + 1
+        ).padStart(8, "0")}`,
+        brand: brand || "",
+        capacity: capacity,
+        length: basketWidth === "std" ? "682*415*105" : "Custom",
+        received_date: receiveDate,
+        purchase_order: purchaseOrder,
+        create_group: new Date()
+          .toISOString()
+          .replace(/[-:T.Z]/g, "")
+          .slice(0, 14),
+      }));
+
+      return [...baseData, ...newRows];
+    });
+
+    addToast("Basket added successfully", "success");
+  }
+
   const handleAdd = () => {
     if (!purchaseOrder || !brand || !receiveQty) {
       addToast("Please fill in all required fields", "warning");
       return;
     }
 
-    if (tableData) {
+    if (tableData.length > 0) {
       showModal({
         type: "confirm",
-        title: "Delete Former?",
+        title: "Delete Previous Basket?",
         content: "This action cannot be undone.",
         confirmText: "Delete",
-        onConfirm: () => console.log("Deleted"),
+        cancelText: "Keep",
+        onCancel: () => addNewData(),
+        onConfirm: () => addNewData(true),
       });
+    } else {
+      addNewData()
     }
-
-    const qty = parseInt(receiveQty);
-    const newRows: BasketData[] = Array.from({ length: qty }).map((_, i) => ({
-      basket_no: `${plantCode}251226${String(tableData.length + i + 1).padStart(
-        8,
-        "0"
-      )}`,
-      brand: brand || "",
-      capacity: capacity,
-      length: basketWidth === "std" ? "682*415*105" : "Custom",
-      received_date: receiveDate,
-      purchase_order: purchaseOrder,
-      create_group: new Date()
-        .toISOString()
-        .replace(/[-:T.Z]/g, "")
-        .slice(0, 14),
-    }));
-
-    setTableData([...tableData, ...newRows]);
-
-    addToast("Basket added successfully", "success");
   };
 
   const tableHeaders: TableHeader<BasketData>[] = [
@@ -410,7 +432,7 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
 
           <div className="flex justify-center gap-4 mt-8">
             <div
-              className={`p-1 rounded-lg transition-all duration-500 ${
+              className={`rounded-lg transition-all duration-500 ${
                 plantCode
                   ? "ring-2 ring-indigo-400 ring-offset-2 rounded-xl transition-all shadow-lg"
                   : "ring-0"
@@ -418,7 +440,7 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
             >
               <button
                 onClick={handleAdd}
-                className="flex items-center gap-2 px-10 py-3 bg-green-600 text-white rounded-lg font-bold shadow-lg hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-10 py-3 bg-green-600 text-white rounded-lg font-bold shadow-lg hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 disabled={!basketWidth || !receiveQty}
               >
                 <PlusCircle size={20} />
@@ -426,9 +448,13 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
               </button>
             </div>
 
-            <button className="flex items-center gap-2 px-8 py-3 bg-gray-100 text-gray-600 rounded-lg font-semibold hover:bg-gray-200">
-              <Edit size={18} />
-              Exit
+            <button
+              onClick={() => deleteRows(selectedRows)}
+              disabled={selectedRows.length <= 0}
+              className="flex items-center gap-2 px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <Trash2 size={20} />
+              Delete
             </button>
           </div>
         </div>
@@ -442,6 +468,9 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
           isDivided={true}
           width="100%"
           maxHeight="45vh"
+          onSelectionChange={(rows) => {
+            setSelectedRows(rows);
+          }}
           actionButtons={actionButtons}
           pagination={paginationConfig}
           informationElement={

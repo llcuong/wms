@@ -15,8 +15,8 @@ interface ModalProps {
   title: string;
   children?: React.ReactNode;
   type?: ModalType;
-  // Actions
   onConfirm?: () => void;
+  onCancel?: () => void;
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
@@ -30,6 +30,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   type = "default",
   onConfirm,
+  onCancel,
   confirmText = "Confirm",
   cancelText = "Cancel",
   isLoading = false,
@@ -62,6 +63,13 @@ export const Modal: React.FC<ModalProps> = ({
     } finally {
       onClose();
     }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -149,7 +157,7 @@ export const Modal: React.FC<ModalProps> = ({
         {(type !== "default" || onConfirm) && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 rounded-b-xl">
             <button
-              onClick={onClose}
+              onClick={handleCancel}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
             >
               {cancelText}

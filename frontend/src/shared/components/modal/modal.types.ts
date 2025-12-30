@@ -7,6 +7,7 @@ export interface ShowModalOptions {
   title: string;
   content?: ReactNode;
   onConfirm?: () => void;
+  onCancel?: () => void;
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
