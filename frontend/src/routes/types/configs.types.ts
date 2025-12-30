@@ -8,10 +8,4 @@ export interface AppsConfig {
     navigator: AppNavigatorComponent;
 }
 
-export interface ExtraAppConfig {
-    pageId: string;
-    name: string;
-    icon: ComponentType<SVGProps<SVGSVGElement>>;
-}
-
 export type AppsMap = Record<AppIdType, AppNavigatorComponent>;

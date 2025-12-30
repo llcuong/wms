@@ -1,7 +1,7 @@
-import { Navbar, Sidebar, UserMenu } from "@layouts";
 import { useSidebarState } from "@hooks"
 import { PageNavigatorProps } from "@routes/types";
 import { FC, ReactNode } from "react";
+import { Navbar, Sidebar, UserMenu } from "@layouts";
 
 interface AppBaseProps extends PageNavigatorProps {
     children?: ReactNode;
@@ -15,7 +15,7 @@ export const Base: FC<AppBaseProps> = (props) => {
             <Navbar>
                 <Navbar.Left>
                     <span className="text-(--color-primary) text-xl font-bold">
-                        Formers
+                        Packing
                     </span>
                 </Navbar.Left>
                 <Navbar.Right>
