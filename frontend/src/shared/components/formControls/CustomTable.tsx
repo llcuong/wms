@@ -534,7 +534,7 @@ export function Table<T extends Record<string, unknown>>({
                     onClick={() => button.onClick(getSelectedRowsData())}
                     disabled={button.disabled || selectedRows.size === 0}
                     className={`
-                      px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all active:scale-95
+                      px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all active:scale-95 cursor-pointer
                       ${
                         selectedRows.size > 0
                           ? "shadow-md shadow-indigo-100 hover:-translate-y-0.5"

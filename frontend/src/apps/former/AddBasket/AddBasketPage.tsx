@@ -14,6 +14,8 @@ import {
 import { useToast } from "@components/toast";
 import { useModal } from "@components/modal";
 
+const ITEMS_PER_PAGE_KEY = "basket_items_per_page";
+
 interface BasketData {
   [key: string]: unknown;
   basket_no: string;
@@ -106,7 +108,18 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
   // --- Table & Pagination States ---
   const [tableData, setTableData] = useState<BasketData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(96);
+
+  const [itemsPerPage, setItemsPerPage] = useState<number>(() => {
+    const stored = localStorage.getItem(ITEMS_PER_PAGE_KEY);
+    const parsed = Number(stored);
+
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 96;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem(ITEMS_PER_PAGE_KEY, String(itemsPerPage));
+  }, [itemsPerPage]);
+
   const [selectedRows, setSelectedRows] = useState<BasketData[]>([]);
   // const [pageData, setPageData] = useState<BasketData[]>([]);
   // const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
@@ -257,7 +270,7 @@ const AddBasketPage: PageNavigatorComponent = (props) => {
         onConfirm: () => addNewData(true),
       });
     } else {
-      addNewData()
+      addNewData();
     }
   };
 
