@@ -202,8 +202,8 @@ def post_login_account(request):
             response.set_cookie(
                 key='refresh_token',
                 value=tokens['refresh'],
-                httponly=True,  # JS can't read
-                secure=True,  # send only via HTTPS
+                httponly=True,
+                secure=False,
                 samesite='Strict',
                 max_age=7 * 24 * 3600  # 7 days
             )

@@ -31,7 +31,7 @@ export const Login: FC = () => {
                 fullName: data.user_full_name,
                 email: data.user_email,
                 role: 'user'
-            }, data.token);
+            }, data.access_token);
 
             // TODO: Navigate sang trang Dashboard tại đây
 
