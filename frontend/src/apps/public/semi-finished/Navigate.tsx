@@ -1,7 +1,7 @@
 import type { AppNavigatorComponent, PageNavigationMap } from "@routes/types";
 import { usePageNavigation } from "@routes/navigation";
 
-import Index from "./Index";
+import Index from "./Index.tsx";
 
 const NAVIGATE: PageNavigationMap = {
     index: Index,

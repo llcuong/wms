@@ -1,4 +1,4 @@
-import { Base } from "./Base";
+import { Base } from "./Base.tsx";
 import type { PageNavigatorComponent } from "@routes/types";
 
 const Index: PageNavigatorComponent = (props) => {

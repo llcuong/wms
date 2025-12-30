@@ -1,10 +1,10 @@
 import type { AppsConfig } from "@routes/types";
 
 import { PackingIcon, FormerIcon, FinishedIcon, SemiFinishedIcon, AccountIcon, DataIcon } from "@icons"
-import { Navigate as SemiFinishedNavigate } from "@semi-finished/Navigate"
-import { Navigate as FinishedNavigate } from "@finished/Navigate"
-import { Navigate as FormerNavigate } from "@former/Navigate"
-import { Navigate as PackingNavigate } from "@packing/Navigate"
+import { Navigate as SemiFinishedNavigate } from "../../apps/public/semi-finished/Navigate"
+import { Navigate as FinishedNavigate } from "../../apps/public/finished/Navigate"
+import { Navigate as FormerNavigate } from "../../apps/public/former/Navigate"
+import { Navigate as PackingNavigate } from "../../apps/public/packing/Navigate"
 import { Navigate as ManageAccountNavigate } from "@manage-account/Navigate"
 import { Navigate as ManageDataNavigate } from "@manage-data/Navigate"
 

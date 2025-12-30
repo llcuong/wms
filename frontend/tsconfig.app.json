@@ -40,12 +40,12 @@
       "@components/*": ["shared/components/*"],
       "@modules/*": ["shared/modules/*"],
       "@store/*": ["shared/stores/*"],
-      "@manage-account/*": ["admin/manage-account/*"],
-      "@manage-data/*": ["admin/manage-data/*"],
-      "@packing/*": ["apps/packing/*"],
-      "@former/*": ["apps/former/*"],
-      "@semi-finished/*": ["apps/semi-finished/*"],
-      "@finished/*": ["apps/finished/*"]
+      "@manage-account/*": ["apps/admin/manage-account/*"],
+      "@manage-data/*": ["apps/admin/manage-data/*"],
+      "@packing/*": ["apps/public/packing/*"],
+      "@former/*": ["apps/public/former/*"],
+      "@semi-finished/*": ["apps/public/semi-finished/*"],
+      "@finished/*": ["apps/public/finished/*"]
     }
   },
   "include": [

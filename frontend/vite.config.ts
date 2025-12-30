@@ -21,13 +21,13 @@ export default defineConfig({
             "@modules": path.resolve(__dirname, "src/shared/modules"),
             "@store": path.resolve(__dirname, "src/shared/stores"),
 
-            "@manage-account": path.resolve(__dirname, "src/admin/manage-account"),
-            "@manage-data": path.resolve(__dirname, "src/admin/manage-data"),
+            "@manage-account": path.resolve(__dirname, "src/apps/admin/manage-account"),
+            "@manage-data": path.resolve(__dirname, "src/apps/admin/manage-data"),
 
-            "@packing": path.resolve(__dirname, "src/apps/packing"),
-            "@former": path.resolve(__dirname, "src/apps/former"),
-            "@semi-finished": path.resolve(__dirname, "src/apps/semi-finished"),
-            "@finished": path.resolve(__dirname, "src/apps/finished"),
+            "@packing": path.resolve(__dirname, "src/apps/public/packing"),
+            "@former": path.resolve(__dirname, "src/apps/public/former"),
+            "@semi-finished": path.resolve(__dirname, "src/apps/public/semi-finished"),
+            "@finished": path.resolve(__dirname, "src/apps/public/finished"),
         },
     },
     server: {
