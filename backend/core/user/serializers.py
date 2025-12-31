@@ -132,3 +132,4 @@ class UpdateUserCustomUserSerializer(serializers.ModelSerializer):
             'user_status': {'required': False},
         }
 
+

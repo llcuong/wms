@@ -2870,3 +2870,210 @@ def get_factory_tree(request):
     factories = DmFactory.objects.all()
     serializer = DmFactoryTreeSerializer(factories, many=True)
     return Response(serializer.data)
+
+# post_create_account_app_page Swagger
+@extend_schema(
+    tags=["Mapping Account App Page"],
+    request=DmMappingAccountAppPageSerializer,
+    responses={
+        201: DmMappingAccountAppPageSerializer,
+        400: {"type": "object", "properties": {"detail": {"type": "string"}}},
+        401: {"description": "Unauthorized"},
+    },
+    summary="Create account-app-page mapping",
+    description="Create a new mapping between an account, an application, and a page."
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_create_account_app_page(request):
+    """
+    Create a new account-app-page mapping.
+    Request Body (JSON):
+        {
+            "account_id": "admin",
+            "app_code": "WMS",
+            "page_code": "DASHBOARD",
+            "is_active": true
+        }
+    Response:
+        201 Created:
+            {
+                "id": 1,
+                "account_id": "admin",
+                "app_code": "WMS",
+                "page_code": "DASHBOARD",
+                "is_active": true,
+                "created_at": "2025-01-01T08:30:00Z",
+                "created_by": 1
+            }
+    """
+    serializer = DmMappingAccountAppPageSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(created_by=request.user.id)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# get_account_app_page_list Swagger
+@extend_schema(
+    tags=["Mapping Account App Page"],
+    responses={200: DmMappingAccountAppPageSerializer(many=True)},
+    summary="List account-app-page mappings",
+    description="Retrieve all account-app-page mappings."
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_account_app_page_list(request):
+    """
+    Retrieve a list of all account-app-page mappings.
+    Response:
+        200 OK:
+            [
+                {
+                    "id": 1,
+                    "account_id": "admin",
+                    "app_code": "WMS",
+                    "page_code": "DASHBOARD",
+                    "is_active": true,
+                    "created_at": "2025-01-01T08:30:00Z",
+                    "created_by": 1
+                },
+                {
+                    "id": 2,
+                    "account_id": "user01",
+                    "app_code": "WMS",
+                    "page_code": "USER_MANAGEMENT",
+                    "is_active": false,
+                    "created_at": "2025-01-02T09:15:00Z",
+                    "created_by": 1
+                }
+            ]
+    """
+    queryset = DmMappingAccountAppPage.objects.select_related(
+        "account_id", "app_code", "page_code"
+    ).order_by("-created_at")
+
+    serializer = DmMappingAccountAppPageSerializer(queryset, many=True)
+    return Response(serializer.data)
+
+# get_account_app_page_by_id Swagger
+@extend_schema(
+    tags=["Mapping Account App Page"],
+    responses={
+        200: DmMappingAccountAppPageSerializer,
+        404: {"type": "object", "properties": {"error": {"type": "string"}}},
+    },
+    summary="Retrieve account-app-page mapping",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_account_app_page_by_id(request, id):
+    """
+    Retrieve an account-app-page mapping by ID.
+    Path Parameters:
+        id (int): Unique identifier of the account-app-page mapping.
+    Response:
+        200 OK:
+            {
+                "id": 1,
+                "account_id": "admin",
+                "app_code": "WMS",
+                "page_code": "DASHBOARD",
+                "is_active": true,
+                "created_at": "2025-01-01T08:30:00Z",
+                "created_by": 1
+            }
+    """
+    try:
+        mapping = DmMappingAccountAppPage.objects.get(id=id)
+    except DmMappingAccountAppPage.DoesNotExist:
+        return Response(
+            {"error": "Mapping not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = DmMappingAccountAppPageSerializer(mapping)
+    return Response(serializer.data)
+
+# update_account_app_page Swagger
+@extend_schema(
+    tags=["Mapping Account App Page"],
+    request=DmMappingAccountAppPageSerializer,
+    responses={
+        200: DmMappingAccountAppPageSerializer,
+        400: {"type": "object"},
+        404: {"type": "object"},
+    },
+    summary="Update account-app-page mapping",
+    description="Partially update an existing account-app-page mapping."
+)
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_account_app_page(request, id):
+    """
+    Update an account-app-page mapping.
+    Path Parameters:
+        id (int): Unique identifier of the account-app-page mapping.
+
+    Request Body (JSON, partial allowed):
+        {
+            "is_active": true
+        }
+    Response:
+        200 OK:
+            {
+                "id": 1,
+                "account_id": "admin",
+                "app_code": "WMS",
+                "page_code": "DASHBOARD",
+                "is_active": true,
+                "created_at": "2025-01-01T08:30:00Z",
+                "created_by": 1
+            }
+    """
+    try:
+        mapping = DmMappingAccountAppPage.objects.get(id=id)
+    except DmMappingAccountAppPage.DoesNotExist:
+        return Response(
+            {"error": "Mapping not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = DmMappingAccountAppPageSerializer(
+        mapping, data=request.data, partial=True
+    )
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# delete_account_app_page Swagger
+@extend_schema(
+    tags=["Mapping Account App Page"],
+    responses={
+        204: None,
+        404: {"type": "object", "properties": {"error": {"type": "string"}}},
+    },
+    summary="Delete account-app-page mapping",
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_account_app_page(request, id):
+    """
+    Delete an account-app-page mapping.
+    Path Parameters:
+        id (int): Unique identifier of the account-app-page mapping.
+    Response:
+        204 No Content:
+            Mapping was successfully deleted.
+    """
+    try:
+        mapping = DmMappingAccountAppPage.objects.get(id=id)
+    except DmMappingAccountAppPage.DoesNotExist:
+        return Response(
+            {"error": "Mapping not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    mapping.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)

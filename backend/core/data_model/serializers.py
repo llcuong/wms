@@ -653,3 +653,24 @@ class DmFactoryTreeSerializer(serializers.ModelSerializer):
             return None
         return DmBranchTreeSerializer(qs, many=True).data
 
+class DmMappingAccountAppPageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DmMappingAccountAppPage
+        fields = "__all__"
+        read_only_fields = ["id", "created_at", "created_by"]
+
+    def validate(self, attrs):
+        account = attrs.get("account_id")
+        app = attrs.get("app_code")
+        page = attrs.get("page_code")
+
+        if not self.instance and DmMappingAccountAppPage.objects.filter(
+            account_id=account,
+            app_code=app,
+            page_code=page
+        ).exists():
+            raise serializers.ValidationError(
+                "This account is already mapped to the specified app page."
+            )
+
+        return attrs
