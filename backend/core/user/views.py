@@ -78,7 +78,7 @@ def get_user_list(request):
                 "user_full_name": {"type": "string"},
                 "user_email": {"type": "string"},
                 "access_token": {"type": "string"},
-                "refresh_token": {"type": "string"},
+                # "refresh_token": {"type": "string"},
                 "token_type": {"type": "string"},
                 "expires_in": {"type": "integer"},
                 "last_login": {"type": "string", "format": "date-time"},

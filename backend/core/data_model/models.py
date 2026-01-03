@@ -166,6 +166,27 @@ class DmMappingAccountApp(models.Model):
     def __str__(self):
         return f"{self.account_id} -> {self.app_code}"
 
+class DmMappingAccountAppPage(models.Model):
+    account_id = models.ForeignKey(UserAccounts, to_field='account_id', db_column='account_id', on_delete=models.CASCADE, related_name='account_app_pages')
+    app_code = models.ForeignKey(DmAppName, to_field='app_code', db_column='app_code', on_delete=models.CASCADE, related_name='account_pages')
+    page_code = models.ForeignKey(DmAppPageName, to_field='page_code', db_column='page_code', on_delete=models.CASCADE, related_name='account_mappings')
+
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'dm_mapping_account_app_page'
+        unique_together = ('account_id', 'app_code', 'page_code')
+        indexes = [
+            models.Index(fields=['account_id'], name='idx_acc_app_page_account'),
+            models.Index(fields=['app_code'], name='idx_acc_app_page_app'),
+            models.Index(fields=['page_code'], name='idx_acc_app_page_page'),
+        ]
+
+    def __str__(self):
+        return f"{self.account_id.account_id} -> {self.app_code.app_code} -> {self.page_code.page_code}"
 
 class DmMappingAccountSpecialPermission(models.Model):
     account_id = models.ForeignKey(UserAccounts, to_field='account_id', db_column='account_id', on_delete=models.CASCADE)
