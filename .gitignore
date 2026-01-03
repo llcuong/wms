@@ -8,5 +8,9 @@ frontend/node_modules/
 .expo/
 
 *.py[co]
+*.pyc
 __pycache__
+__pycache__/
 *__pycache__
+
+android/
