@@ -913,6 +913,7 @@ def delete_branch_by_code(request, branch_code):
         {"message": "Delete branch successfully"},
         status=status.HTTP_200_OK
     )
+
 # delete_machine_by_code Swagger
 @extend_schema(
     tags=["DmMachine"],
@@ -2864,8 +2865,37 @@ def delete_mapping_account_special_permission(request, id):
 @permission_classes([IsAuthenticated])
 def get_factory_tree(request):
     """
-    Get factory tree:
-    Factory -> Branch -> Machine -> MachineLine
+    Retrieve factory hierarchy tree.
+    This API returns the full factory structure in a hierarchical format:
+    Factory → Branch → Machine → Machine Line.
+    Response:
+    ```json
+    [
+        {
+            "factory_code": "F001",
+            "factory_name": "Factory A",
+            "branches": [
+                {
+                    "branch_code": "B001",
+                    "branch_name": "Branch 1",
+                    "branch_type": "PRODUCTION",
+                    "machines": [
+                        {
+                            "machine_code": "M001",
+                            "machine_name": "Machine 1",
+                            "lines": [
+                                {
+                                    "line_code": "L01",
+                                    "line_name": "Line 1"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+    ```
     """
     factories = DmFactory.objects.all()
     serializer = DmFactoryTreeSerializer(factories, many=True)
