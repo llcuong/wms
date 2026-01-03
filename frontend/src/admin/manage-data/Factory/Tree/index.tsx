@@ -1,20 +1,25 @@
+import React from "react";
 import { Tree } from "react-arborist";
 
-import { TreeNodeModel, TreeNodeType } from "./tree.types";
+import { TreeIconRender, TreeNodeModel } from "./tree.types";
 
 import { TreeNode } from "./TreeNode";
 
-interface TreeStructureProps {
+export interface TreeStructureProps {
     data: TreeNodeModel[];
-    onAdd: (parentId: string, type: TreeNodeType) => void;
-    onRename: (id: string, name: string) => void;
-    onDelete: (id: string) => void;
+    onAdd: (parent: TreeNodeModel) => void;
+    onUpdate: (node: TreeNodeModel, prev: TreeNodeModel) => void;
+    onDelete: (node: TreeNodeModel) => void;
+    renderIcon: TreeIconRender;
+    popupContent: React.ReactNode;
 };
 
 export function TreeStructure({
     data,
+    renderIcon,
+    popupContent,
     onAdd,
-    onRename,
+    onUpdate,
     onDelete,
 }: TreeStructureProps) {
     return (
@@ -23,14 +28,17 @@ export function TreeStructure({
             childrenAccessor="children"
             openByDefault
             width="100%"
-            height={500}
+            height={750}
+            rowHeight={30}
         >
             {(props) => (
                 <TreeNode
                     {...props}
                     onAdd={onAdd}
-                    onRename={onRename}
+                    onUpdate={onUpdate}
                     onDelete={onDelete}
+                    renderIcon={renderIcon}
+                    popupContent={popupContent}
                 />
             )}
         </Tree>

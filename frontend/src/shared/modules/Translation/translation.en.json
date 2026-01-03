@@ -10,13 +10,19 @@
         "semiFinished": "Semi-Finished",
         "finished": "Finished"
     },
+    "dataModel": {
+        "factory": "Factory",
+        "product": "Product"
+    },
     "title": {
         "userManagement": "User Management",
+        "dataModels": "Data Model Management",
         "addUser": "Add User",
         "addAccount": "Add Account"
     },
     "description": {
         "userManagement": "Manage users and theirs accounts",
+        "dataModels": "Manage all data models in the system",
         "addUser": "Fill in the user information below",
         "addAccount": "Create login account for user: {{userId}}"
     },
@@ -46,7 +52,7 @@
     },
     "message": {},
     "notification": {
-        "noUsers": "No users found.",
+        "noData": "No data found.",
         "noAccount": "No account"
     },
     "hint": {
@@ -56,7 +62,7 @@
         "active": "Active",
         "pending": "Pending",
         "deleted": "Deleted",
-        "loadingUser": "Loading users...",
+        "loading": "Loading data...",
         "adding": "Adding..."
     },
     "custom": {

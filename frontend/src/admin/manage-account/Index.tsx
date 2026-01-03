@@ -93,7 +93,7 @@ const Index: PageNavigatorComponent = (props) => {
                     <div className="flex items-center justify-center py-20">
                         <div className="flex flex-col items-center gap-4">
                             <div className="w-12 h-12 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
-                            <p className="text-(text-primary) font-medium">{t("status.loadingUser")}</p>
+                            <p className="text-(text-primary) font-medium">{t("status.loading")}</p>
                         </div>
                     </div>
                 ) : error ? (
@@ -128,7 +128,7 @@ const Index: PageNavigatorComponent = (props) => {
                                                     <div className="w-16 h-16 bg-(--bg-secondary) rounded-full flex items-center justify-center">
                                                         <NoUsersIcon />
                                                     </div>
-                                                    <p className="text-(--text-secondary) font-medium">{t("notification.noUsers")}</p>
+                                                    <p className="text-(--text-secondary) font-medium">{t("notification.noData")}</p>
                                                     <p className="text-(--text-secondary) text-sm">{t("hint.noUsers")}</p>
                                                 </div>
                                             </td>
