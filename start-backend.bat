@@ -1,5 +1,5 @@
 @echo off
-call .venv\Scripts\activate
 cd backend
+call .venv\Scripts\activate
 python manage.py runserver 0.0.0.0:10000
 pause

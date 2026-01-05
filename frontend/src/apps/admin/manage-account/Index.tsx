@@ -69,9 +69,9 @@ const Index: PageNavigatorComponent = (props) => {
             navigateApp={props.navigateApp}
             navigatePage={props.navigatePage}
         >
-            <div className="bg-(--bg-primary)) container mx-auto px-4 py-8">
+            <div className="bg-(--bg-primary)) container mx-auto px-4 py-2">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-2">
                     <div>
                         <h1 className="text-3xl font-bold bg-(--color-primary) bg-clip-text text-transparent">
                             {t("title.userManagement")}

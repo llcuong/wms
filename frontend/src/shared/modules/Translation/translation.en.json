@@ -6,6 +6,7 @@
     "app": {
         "accounts": "Accounts",
         "dataModels": "Data Models",
+        "packing": "Packing",
         "former": "Former",
         "semiFinished": "Semi-Finished",
         "finished": "Finished"

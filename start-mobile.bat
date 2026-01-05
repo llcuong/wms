@@ -1,2 +1,0 @@
-cd ./mobile
-pnpm start

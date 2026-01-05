@@ -11,25 +11,25 @@ import { Navigate as ManageDataNavigate } from "@manage-data/Navigate"
 export const PUBLIC_CONFIGS: AppsConfig[] = [
     {
         id: 1,
-        name: "Packing",
+        name: "packing",
         icon: PackingIcon,
         navigator: PackingNavigate,
     },
     {
         id: 2,
-        name: "Former",
+        name: "former",
         icon: FormerIcon,
         navigator: FormerNavigate,
     },
     {
         id: 3,
-        name: "Semi-finished",
+        name: "semiFinished",
         icon: SemiFinishedIcon,
         navigator: SemiFinishedNavigate,
     },
     {
         id: 4,
-        name: "Finished",
+        name: "finished",
         icon: FinishedIcon,
         navigator: FinishedNavigate,
     }
@@ -42,13 +42,13 @@ export const SETTING_CONFIGS: AppsConfig[] = [
 export const ADMIN_CONFIGS: AppsConfig[] = [
     {
         id: 10,
-        name: "Data models",
+        name: "dataModels",
         icon: DataIcon,
         navigator: ManageDataNavigate,
     },
     {
         id: 11,
-        name: "Accounts",
+        name: "accounts",
         icon: AccountIcon,
         navigator: ManageAccountNavigate,
     }

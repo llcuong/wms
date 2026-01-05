@@ -3,12 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import type { SidebarProps } from "./types";
 
-import { PRIVATE_CONFIGS } from "@routes/configs";
+import { ADMIN_CONFIGS } from "@routes/configs";
 
 const BodyBottom: FC<SidebarProps> = (props) => {
     const { t } = useTranslation();
-
-    const extraApps = props.extraPrivateApps ?? [];
 
     const handleAppClick = (appId: number) => {
         if (props.currentApp === appId) {
@@ -22,15 +20,9 @@ const BodyBottom: FC<SidebarProps> = (props) => {
         }
     };
 
-    const handlePageClick = (pageId: string) => {
-        if (typeof props.navigatePage === "function") {
-            props.navigatePage(pageId);
-        }
-    };
-
     return (
         <div className="px-1.5 pb-2 flex flex-col space-y-0.5">
-            {PRIVATE_CONFIGS.map((app) => {
+            {ADMIN_CONFIGS.map((app) => {
                 const Icon = app.icon;
                 const isActive = props.currentApp === app.id;
 

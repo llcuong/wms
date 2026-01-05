@@ -17,7 +17,7 @@ const Index: PageNavigatorComponent = (props) => {
     const getDataModelContent = () => {
         const dataModel = DATA_MODEL_LIST.find(model => model.id === selectedDataModel) ?? undefined;
         if (dataModel) return (
-            <div className="h-[70vh] mt-4 pl-4 overflow-auto" id={dataModel.id}>
+            <div className="h-[70vh] mt-2 pl-4 overflow-auto" id={dataModel.id}>
                 {dataModel?.render}
             </div>
         );
@@ -30,8 +30,8 @@ const Index: PageNavigatorComponent = (props) => {
             navigateApp={props.navigateApp}
             navigatePage={props.navigatePage}
         >
-            <div className="bg-(--bg-primary)) container mx-auto px-4 py-8">
-                <div className="mb-10">
+            <div className="bg-(--bg-primary)) container mx-auto px-4 py-2">
+                <div className="mb-4">
                     <h1 className="text-3xl font-bold bg-(--color-primary) bg-clip-text text-transparent">
                         {t("title.dataModels")}
                     </h1>

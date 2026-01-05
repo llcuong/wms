@@ -6,7 +6,8 @@
     "app": {
         "accounts": "Tài khoản",
         "dataModels": "Dữ liệu",
-        "former": "Nguyên liệu",
+        "packing": "Bao bì",
+        "former": "Khuôn",
         "semiFinished": "Bán thành phẩm",
         "finished": "Thành phẩm"
     },
