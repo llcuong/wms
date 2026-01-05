@@ -5,5 +5,12 @@ node_modules/
 frontend/node_modules/
 
 .venv/
+.expo/
 
+*.py[co]
+*.pyc
+__pycache__
 __pycache__/
+*__pycache__
+
+android/
