@@ -13,17 +13,17 @@
     --shadow-primary: rgba(0, 0, 0, 0.1);
 }
 
-[data-theme="black"] {
-    --bg-primary: #1d224a;
-    --bg-secondary: #090f33;
+[data-theme="dark"] {
+    --bg-primary: #111318;
+    --bg-secondary: #29312e;
 
     --text-primary: #ffffff;
-    --text-secondary: #ffffff;
+    --text-secondary: #ddfff1;
 
-    --color-primary: #ffffff;
-    --color-secondary: #1d224a;
+    --color-primary: #155dfc;
+    --color-secondary: #7e85b4;
 
-    --shadow-primary: #131c47;
+    --shadow-primary: rgba(0, 0, 0, 0.1);
 }
 
 .set__copy__not__allow {

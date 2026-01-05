@@ -2,5 +2,65 @@
     "theme": {
         "light": "浅色",
         "dark": "深色"
+    },
+    "app": {
+        "accounts": "账户",
+        "dataModels": "数据模型",
+        "former": "原料",
+        "semiFinished": "半成品",
+        "finished": "成品"
+    },
+    "title": {
+        "userManagement": "用户管理",
+        "addUser": "添加用户",
+        "addAccount": "添加账号"
+    },
+    "description": {
+        "userManagement": "管理用户及其账号",
+        "addUser": "请填写以下用户信息",
+        "addAccount": "为用户 {{userId}} 创建登录账号"
+    },
+    "button": {
+        "addUser": "添加用户",
+        "edit": "编辑",
+        "addAccount": "添加账号",
+        "cancel": "取消",
+        "save": "保存",
+        "retry": "重试",
+        "logout": "退出登录"
+    },
+    "label": {
+        "userId": "用户ID",
+        "username": "用户名",
+        "userInfo": "用户信息",
+        "fullName": "姓名",
+        "email": "电子邮箱",
+        "status": "状态",
+        "accountId": "账号ID",
+        "password": "密码",
+        "lastLogin": "上次登录",
+        "actions": "操作"
+    },
+    "placeholder": {
+        "enterPassword": "请输入安全密码"
+    },
+    "message": {},
+    "notification": {
+        "noUsers": "未找到用户。",
+        "noAccount": "无账号"
+    },
+    "hint": {
+        "noUsers": "点击“添加用户”以创建第一个用户"
+    },
+    "status": {
+        "active": "启用",
+        "pending": "待处理",
+        "deleted": "已删除",
+        "loadingUser": "正在加载用户...",
+        "adding": "正在添加..."
+    },
+    "custom": {
+        "showing": "显示",
+        "users": "个用户"
     }
 }

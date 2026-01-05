@@ -1,7 +1,12 @@
-import { useAuthStore } from "@modules/Authentication/useAuthStore";
+import { useTranslation } from "react-i18next";
+
 import type { Props } from "./types"
 
+import { useAuthStore } from "@modules/Authentication/useAuthStore";
+
 export function Footer({ isSideBarOpen }: Props) {
+    const { t } = useTranslation();
+
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
 
@@ -25,7 +30,7 @@ export function Footer({ isSideBarOpen }: Props) {
 
                     {isSideBarOpen && (
                         <span className="font-medium overflow-hidden whitespace-nowrap ml-2.5 text-base">
-                            Logout
+                            {t("button.logout")}
                         </span>
                     )}
                 </button>

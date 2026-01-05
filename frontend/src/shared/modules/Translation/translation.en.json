@@ -2,5 +2,71 @@
     "theme": {
         "light": "Light",
         "dark": "Dark"
+    },
+    "app": {
+        "accounts": "Accounts",
+        "dataModels": "Data Models",
+        "former": "Former",
+        "semiFinished": "Semi-Finished",
+        "finished": "Finished"
+    },
+    "dataModel": {
+        "factory": "Factory",
+        "product": "Product"
+    },
+    "title": {
+        "userManagement": "User Management",
+        "dataModels": "Data Model Management",
+        "addUser": "Add User",
+        "addAccount": "Add Account"
+    },
+    "description": {
+        "userManagement": "Manage users and theirs accounts",
+        "dataModels": "Manage all data models in the system",
+        "addUser": "Fill in the user information below",
+        "addAccount": "Create login account for user: {{userId}}"
+    },
+    "button": {
+        "addUser": "Add User",
+        "edit": "Edit",
+        "addAccount": "Add Account",
+        "cancel": "Cancel",
+        "save": "Save",
+        "retry": "Retry",
+        "logout": "Logout"
+    },
+    "label": {
+        "userId": "User ID",
+        "username": "Username",
+        "userInfo": "User Information",
+        "fullName": "Full Name",
+        "email": "Email",
+        "status": "Status",
+        "accountId": "Account ID",
+        "password": "Password",
+        "lastLogin": "Last Login",
+        "actions": "Actions"
+    },
+    "placeholder": {
+        "enterPassword": "Enter secure password"
+    },
+    "message": {},
+    "notification": {
+        "noData": "No data found.",
+        "noAccount": "No account"
+    },
+    "hint": {
+        "noUsers": "Click \"Add User\" to create your first user"
+    },
+    "status": {
+        "active": "Active",
+        "pending": "Pending",
+        "deleted": "Deleted",
+        "loading": "Loading data...",
+        "adding": "Adding..."
+    },
+    "custom": {
+        "showing": "Showing",
+        "users": "users"
     }
 }
