@@ -25,8 +25,10 @@ export interface MachineLineModel {
     line_name: string;
 };
 
+export type TreeNodeType = "root" | "factory" | "branch" | "machine" | "line";
+
 interface TreeNodeBase {
-    type: "factory" | "branch" | "machine" | "line";
+    type: TreeNodeType;
 }
 
 export interface MachineLineNode extends TreeNodeBase, MachineLineModel {

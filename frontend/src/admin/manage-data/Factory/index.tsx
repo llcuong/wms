@@ -2,17 +2,10 @@ import { useTranslation } from "react-i18next";
 
 import { TreeStructure } from "./Tree";
 
+import { PopupContent } from "./popup.contents";
 import { factoryTreeIconRender } from "./factoryModel.icons";
 import useFactory from "./useFactory";
 import useNestedTree from "./Tree/useNestedTree";
-
-const PopupContent = () => {
-    return (
-        <div>
-            Popup Content
-        </div>
-    );
-};
 
 export default function FactoryModel() {
     const { t } = useTranslation();
@@ -22,6 +15,11 @@ export default function FactoryModel() {
         error,
         factoryTree,
         getFactoryModelData,
+
+        nodeLabel,
+        handleSelectNodeLabel,
+        actionType,
+        handleSelectActionType,
     } = useFactory();
 
     const {
@@ -63,7 +61,9 @@ export default function FactoryModel() {
             onUpdate={(next, prev) => updateNoteById(prev.id, () => next, prev.parentId)}
             onDelete={(node) => deleteNodeById(node.id, node.parentId)}
             renderIcon={factoryTreeIconRender}
-            popupContent={<PopupContent />}
+            handleSelectNodeLabel={handleSelectNodeLabel}
+            handleSelectActionType={handleSelectActionType}
+            popupContent={<PopupContent nodeLabel={nodeLabel} actionType={actionType} />}
         />
     );
 };

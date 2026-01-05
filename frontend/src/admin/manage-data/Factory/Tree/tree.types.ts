@@ -17,3 +17,5 @@ export interface TreeHooks<T> {
     onUpdate: (node: T, prev: T) => void;
     onDelete: (node: T) => void;
 };
+
+export type OpenType = "create" | "update" | "delete";

@@ -1,7 +1,8 @@
 import React from "react";
 import { Tree } from "react-arborist";
 
-import { TreeIconRender, TreeNodeModel } from "./tree.types";
+import { OpenType, TreeIconRender, TreeNodeModel } from "./tree.types";
+import { TreeNodeType } from "../factoryModel.types";
 
 import { TreeNode } from "./TreeNode";
 
@@ -12,6 +13,8 @@ export interface TreeStructureProps {
     onDelete: (node: TreeNodeModel) => void;
     renderIcon: TreeIconRender;
     popupContent: React.ReactNode;
+    handleSelectNodeLabel: (nodeLabel: TreeNodeType) => void;
+    handleSelectActionType: (actionType: OpenType) => void;
 };
 
 export function TreeStructure({
@@ -21,6 +24,8 @@ export function TreeStructure({
     onAdd,
     onUpdate,
     onDelete,
+    handleSelectNodeLabel,
+    handleSelectActionType,
 }: TreeStructureProps) {
     return (
         <Tree<TreeNodeModel>
@@ -39,6 +44,8 @@ export function TreeStructure({
                     onDelete={onDelete}
                     renderIcon={renderIcon}
                     popupContent={popupContent}
+                    handleSelectNodeLabel={handleSelectNodeLabel}
+                    handleSelectActionType={handleSelectActionType}
                 />
             )}
         </Tree>

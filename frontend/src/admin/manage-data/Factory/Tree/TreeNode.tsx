@@ -1,17 +1,16 @@
 import React, { useState } from "react";
 import { NodeRendererProps } from "react-arborist";
 
-import { TreeHooks, TreeIconRender, TreeNodeModel } from "./tree.types";
+import { OpenType, TreeHooks, TreeIconRender, TreeNodeModel } from "./tree.types";
+import { TreeNodeType } from "../factoryModel.types";
 
 import { Popup } from "@layouts";
 import { DeleteIcon, EditIcon, PlusIcon } from "@icons";
 
-type OpenType = "create" | "update" | "delete" | null;
-
 interface ButtonData {
-    key: OpenType | "cancel";
+    key: OpenType | "cancel" | "unknown";
     type: React.ButtonHTMLAttributes<HTMLButtonElement>["type"];
-    onClick: () => void;
+    onClick: (() => void) | undefined;
     className: string;
     label: string;
 };
@@ -23,7 +22,7 @@ interface PopupData {
     content?: React.ReactNode;
 };
 
-interface PopupSection {
+interface PopupSectionProps {
     isOpen: boolean;
     openType: OpenType;
     handleClosePopup: () => void;
@@ -39,9 +38,9 @@ const PopupSection = ({
     content,
     node,
     buttonAction,
-}: PopupSection) => {
+}: PopupSectionProps) => {
     const getPopupData = () => {
-        let popupData: PopupData;
+        let popupData: PopupData | undefined;
         switch (openType) {
             case "create":
                 popupData = {
@@ -68,18 +67,14 @@ const PopupSection = ({
                 };
                 break;
             default:
-                popupData = {
-                    key: null,
-                    title: "Unknown Title",
-                    description: "Unknown Description",
-                };
+                popupData = undefined;
                 break;
         };
         return popupData;
     };
 
     const getPopupButton = () => {
-        let buttonData: ButtonData;
+        let buttonData: ButtonData | undefined;
         switch (openType) {
             case "create":
                 buttonData = {
@@ -117,13 +112,7 @@ const PopupSection = ({
                 };
                 break;
             default:
-                buttonData = {
-                    key: null,
-                    type: "button",
-                    onClick: () => { },
-                    className: "",
-                    label: "",
-                };
+                buttonData = undefined;
                 break;
         };
         return buttonData;
@@ -138,23 +127,23 @@ const PopupSection = ({
             label: "Cancel",
         },
         {
-            key: getPopupButton().key,
-            type: getPopupButton().type,
-            onClick: getPopupButton().onClick,
-            className: getPopupButton().className,
-            label: getPopupButton().label,
+            key: getPopupButton()?.key ?? "unknown",
+            type: getPopupButton()?.type ?? "button",
+            onClick: getPopupButton()?.onClick,
+            className: getPopupButton()?.className ?? "",
+            label: getPopupButton()?.label ?? "Unknown",
         },
     ];
 
     return (
         <Popup isOpen={isOpen} onClose={handleClosePopup}>
             <Popup.Header>
-                {getPopupData().title}
-                {getPopupData().description}
+                {getPopupData()?.title || "Unknown"}
+                {getPopupData()?.description || "Unknown"}
             </Popup.Header>
             <Popup.Body>
-                {getPopupData().content}
-                {getPopupData().content && (
+                {getPopupData()?.content || "Unknown"}
+                {getPopupData()?.content && (
                     <div className="flex items-center justify-end gap-4">
                         {BUTTON_LIST.map((button) => (
                             <button key={button.key} type={button.type}
@@ -174,6 +163,8 @@ const PopupSection = ({
 interface TreeNodeProps extends NodeRendererProps<TreeNodeModel>, TreeHooks<TreeNodeModel> {
     popupContent: React.ReactNode;
     renderIcon?: TreeIconRender;
+    handleSelectNodeLabel: (nodeLabel: TreeNodeType) => void;
+    handleSelectActionType: (actionType: OpenType) => void;
 };
 
 export function TreeNode({
@@ -184,9 +175,11 @@ export function TreeNode({
     onAdd,
     onUpdate,
     onDelete,
+    handleSelectNodeLabel,
+    handleSelectActionType,
 }: TreeNodeProps) {
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
-    const [openType, setOpenType] = useState<OpenType>(null);
+    const [openType, setOpenType] = useState<OpenType | null>(null);
     const [isOpen, setIsOpen] = useState(false);
 
     const { name, isFirst, isLast } = node.data;
@@ -197,9 +190,15 @@ export function TreeNode({
         else return;
     };
 
-    const handleSelectNode = () => setSelectedNode((prev) => (prev === node.id ? null : node.id));
+    const handleSelectNode = () => {
+        console.log('Run')
+        console.log(selectedNode)
+        handleSelectNodeLabel(node.data.type as TreeNodeType);
+        setSelectedNode((prev) => (prev === node.id ? null : node.id));
+    };
 
     const handleOpenPopup = (key: OpenType) => {
+        handleSelectActionType(key);
         setOpenType(key);
         setIsOpen(true);
     };
@@ -232,7 +231,7 @@ export function TreeNode({
                     </button>
                 )}
 
-                {!isFirst && (
+                {(!isLast && !isFirst) && (
                     <button type="button" title="Edit"
                         onClick={() => handleOpenPopup("update")}
                         className="text-xs text-gray-600 cursor-pointer"
@@ -241,12 +240,14 @@ export function TreeNode({
                     </button>
                 )}
 
-                <button type="button" title="Delete"
-                    onClick={() => handleOpenPopup("delete")}
-                    className="text-xs text-red-600 cursor-pointer"
-                >
-                    <DeleteIcon />
-                </button>
+                {!isFirst && (
+                    <button type="button" title="Delete"
+                        onClick={() => handleOpenPopup("delete")}
+                        className="text-xs text-red-600 cursor-pointer"
+                    >
+                        <DeleteIcon />
+                    </button>
+                )}
             </div>
 
             {(isOpen && openType)

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { FactoryNode } from "./factoryModel.types";
-import { TreeNodeModel } from "./Tree/tree.types";
+import { FactoryNode, TreeNodeType } from "./factoryModel.types";
+import { OpenType, TreeNodeModel } from "./Tree/tree.types";
 
 import axiosClient from "@modules/api";
 import { createDummyRoot, factoryTreeToGeneric } from "./factoryModel.utils";
@@ -10,6 +10,9 @@ export default function useFactory() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [factoryTree, setFactoryTree] = useState<TreeNodeModel[] | []>([]);
+
+    const [nodeLabel, setNodeLabel] = useState<TreeNodeType | null>(null);
+    const [actionType, setActionType] = useState<OpenType | null>(null);
 
     const getFactoryModelData = useCallback(async () => {
         try {
@@ -32,10 +35,18 @@ export default function useFactory() {
         getFactoryModelData();
     }, [getFactoryModelData]);
 
+    const handleSelectNodeLabel = (nodeLabel: TreeNodeType) => setNodeLabel(nodeLabel);
+    const handleSelectActionType = (actionType: OpenType) => setActionType(actionType);
+
     return {
         isLoading,
         error,
         factoryTree,
         getFactoryModelData,
+
+        nodeLabel,
+        handleSelectNodeLabel,
+        actionType,
+        handleSelectActionType,
     };
 };
