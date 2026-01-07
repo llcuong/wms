@@ -12,6 +12,9 @@ const Index: PageNavigatorComponent = (props) => {
                 <div className="bg-white p-6 rounded-lg shadow">
                     <p>Welcome to Former Warehouse</p>
                 </div>
+                <button onClick={() => props.navigatePage('add-basket')} className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Add Basket
+                </button>
             </div>
         </Base>
     );
