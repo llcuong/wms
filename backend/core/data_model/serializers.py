@@ -7,6 +7,15 @@ class PostDmFactoryCreateSerializer(serializers.ModelSerializer):
         model = DmFactory
         fields = ['factory_code', 'factory_name']
 
+    def create(self, validated_data):
+        validated_data['factory_name'] = validated_data['factory_name'].upper()
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if 'factory_name' in validated_data:
+            validated_data['factory_name'] = validated_data['factory_name'].upper()
+        return super().update(instance, validated_data)
+
 class PostDmBranchCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new branch"""
     factory_code = serializers.SlugRelatedField(
@@ -37,6 +46,18 @@ class PostDmBranchCreateSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    def create(self, validated_data):
+        for field in ['branch_code', 'branch_name', 'branch_type']:
+            if field in validated_data and isinstance(validated_data[field], str):
+                validated_data[field] = validated_data[field].upper()
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        for field in ['branch_code', 'branch_name', 'branch_type']:
+            if field in validated_data and isinstance(validated_data[field], str):
+                validated_data[field] = validated_data[field].upper()
+        return super().update(instance, validated_data)
+
 class PostDmMachineCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new machine"""
     branch_code = serializers.SlugRelatedField(
@@ -62,6 +83,18 @@ class PostDmMachineCreateSerializer(serializers.ModelSerializer):
             )
         return attrs
 
+    def create(self, validated_data):
+        for field in ['machine_code', 'machine_name']:
+            if field in validated_data and isinstance(validated_data[field], str):
+                validated_data[field] = validated_data[field].upper()
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        for field in ['machine_code', 'machine_name']:
+            if field in validated_data and isinstance(validated_data[field], str):
+                validated_data[field] = validated_data[field].upper()
+        return super().update(instance, validated_data)
+
 class PostDmMachineLineCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new machine line"""
     machine_code = serializers.SlugRelatedField(
@@ -86,6 +119,18 @@ class PostDmMachineLineCreateSerializer(serializers.ModelSerializer):
                 "Line code already exists for this machine"
             )
         return attrs
+
+    def create(self, validated_data):
+        for field in ['line_code', 'line_name']:
+            if field in validated_data and isinstance(validated_data[field], str):
+                validated_data[field] = validated_data[field].upper()
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        for field in ['line_code', 'line_name']:
+            if field in validated_data and isinstance(validated_data[field], str):
+                validated_data[field] = validated_data[field].upper()
+        return super().update(instance, validated_data)
 
 class GetDmFactoryByCodeSerializer(serializers.ModelSerializer):
     """Serializer for retrieving Factory information by factory code."""
@@ -674,3 +719,486 @@ class DmMappingAccountAppPageSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+class PermissionNodeSerializer(serializers.ModelSerializer):
+    """
+    Serializer representing a **Permission** node in a permission tree structure.
+    """
+    class Meta:
+        model = DmPermissions
+        fields = ["permission_id", "permission_name"]
+
+
+class PageNodeSerializer(serializers.ModelSerializer):
+    """
+    Serializer representing a **Page** node in a permission tree structure.
+    """
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmAppPageName
+        fields = ["page_code", "page_name", "children"]
+
+    def get_children(self, obj):
+        perms = DmPermissions.objects.filter(
+            dmmappingrolepermission__page_code=obj
+        ).distinct().order_by("permission_id")
+
+        if not perms.exists():
+            return None
+
+        return PermissionNodeSerializer(perms, many=True).data
+
+class AppNodeSerializer(serializers.ModelSerializer):
+    """
+    Serializer representing an **Application** node in a permission tree structure.
+    """
+    children = serializers.SerializerMethodField()
+    app_type = serializers.CharField(source="get_app_type_display")
+
+    class Meta:
+        model = DmAppName
+        fields = ["app_code", "app_name", "app_type", "children"]
+
+    def get_children(self, obj):
+        pages = DmAppPageName.objects.filter(app_code=obj).order_by("page_code")
+        if not pages.exists():
+            return None
+        return PageNodeSerializer(pages, many=True, context=self.context).data
+
+class PermissionSerializer(serializers.ModelSerializer):
+    """
+    Serializer representing a **Permission** object.
+    """
+    class Meta:
+        model = DmPermissions
+        fields = ["permission_id", "permission_name"]
+
+class PageTreeSerializer(serializers.ModelSerializer):
+    """
+    Serializer representing a **Page** node with its associated permissions.
+    """
+    permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmAppPageName
+        fields = ["page_code", "page_name", "permissions"]
+
+    def get_permissions(self, page):
+        perms = self.context["permissions"]
+        return PermissionSerializer(perms, many=True).data
+
+class AppTreeSerializer(serializers.ModelSerializer):
+    """
+    Serializer representing an **Application** node with its pages and permissions,
+    built from a role-based permission tree.
+    """
+    pages = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmAppName
+        fields = ["app_code", "app_name", "pages"]
+
+    def get_pages(self, app):
+        role = self.context["role"]
+        role_tree = self.context["role_tree"]
+
+        pages = []
+        for page, perms in role_tree[role][app].items():
+            pages.append(
+                PageTreeSerializer(
+                    page,
+                    context={"permissions": perms}
+                ).data
+            )
+        return pages
+
+class RoleTreeSerializer(serializers.ModelSerializer):
+    """
+    Serializer representing a **Role** node at the root of a role-based
+    permission tree structure.
+    """
+    apps = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DmRoles
+        fields = ["role_code", "role_name", "apps"]
+
+    def get_apps(self, role):
+        role_tree = self.context["role_tree"]
+        if role not in role_tree:
+            return []
+
+        apps = []
+        for app in role_tree[role]:
+            apps.append(
+                AppTreeSerializer(
+                    app,
+                    context={
+                        "role": role,
+                        "role_tree": role_tree
+                    }
+                ).data
+            )
+        return apps
+
+class AssignAccountRoleSerializer(serializers.Serializer):
+    """
+    Serializer for assigning one or more roles to an account.
+    """
+    role_codes = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False
+    )
+
+    def validate_role_codes(self, value):
+        roles = DmRoles.objects.filter(role_code__in=value)
+        if roles.count() != len(set(value)):
+            raise serializers.ValidationError(
+                "One or more role_codes are invalid."
+            )
+        return value
+
+class AssignAccountBranchRoleSerializer(serializers.Serializer):
+    """
+    Serializer for assigning one or more roles to an account at the **branch** level.
+    """
+    role_codes = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False
+    )
+
+    def validate_role_codes(self, value):
+        roles = DmRoles.objects.filter(role_code__in=value)
+        if roles.count() != len(set(value)):
+            raise serializers.ValidationError(
+                "One or more role_codes are invalid."
+            )
+        return value
+
+class PagePermissionItemSerializer(serializers.Serializer):
+    """
+    Serializer representing a page and its assigned permissions.
+    """
+    page_code = serializers.CharField()
+    permissions = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False
+    )
+
+    def validate(self, data):
+        # Check page exists
+        if not DmAppPageName.objects.filter(page_code=data["page_code"]).exists():
+            raise serializers.ValidationError(
+                {"page_code": f"Invalid page_code: {data['page_code']}"}
+            )
+
+        # Check permission exists
+        valid_perms = DmPermissions.objects.filter(
+            permission_name__in=data["permissions"]
+        ).values_list("permission_name", flat=True)
+
+        invalid_perms = set(data["permissions"]) - set(valid_perms)
+        if invalid_perms:
+            raise serializers.ValidationError(
+                {"permissions": f"Some permissions in {data['page_code']} are invalid: {list(invalid_perms)}"}
+            )
+
+        return data
+
+class AssignRolePagePermissionSerializer(serializers.Serializer):
+    """
+    Serializer for assigning permissions to a role by page.
+    """
+    pages = PagePermissionItemSerializer(many=True)
+
+class PermissionRoleNodeSerializer(serializers.Serializer):
+    """
+    Serializer representing a **Permission** node within a role-based structure.
+    """
+    permission_id = serializers.IntegerField()
+    permission_name = serializers.CharField()
+
+class PageRoleNodeSerializer(serializers.Serializer):
+    """
+    Serializer representing a **Page** node within a role-based permission tree.
+    """
+    page_code = serializers.CharField()
+    page_name = serializers.CharField()
+    children = PermissionNodeSerializer(
+        many=True,
+        required=False,
+        allow_null=True
+    )
+
+class AppRoleNodeSerializer(serializers.Serializer):
+    """
+    Serializer representing an **Application** node within a role-based
+    permission tree structure.
+    """
+    app_code = serializers.CharField()
+    app_name = serializers.CharField()
+    children = PageNodeSerializer(
+        many=True,
+        required=False,
+        allow_null=True
+    )
+
+class RolePermissionTreeSerializer(serializers.Serializer):
+    """
+    Serializer representing a **Role** node as the root of a
+    role–application–page–permission tree structure.
+    """
+    role_code = serializers.CharField()
+    role_name = serializers.CharField()
+    children = AppNodeSerializer(
+        many=True,
+        required=False,
+        allow_null=True
+    )
+
+class AppendPermissionPageSerializer(serializers.Serializer):
+    """
+    Serializer for appending one or more permissions to a page.
+    """
+    page_code = serializers.CharField()
+    permission_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        min_length=1
+    )
+
+class AppendRolePermissionSerializer(serializers.Serializer):
+    """
+    Serializer for appending permissions to a role, grouped by page.
+    """
+    pages = AppendPermissionPageSerializer(many=True)
+
+class AppendAccountRoleSerializer(serializers.Serializer):
+    """
+    Serializer for appending one or more roles to an account.
+    """
+    role_codes = serializers.ListField(
+        child=serializers.CharField(),
+        min_length=1
+    )
+
+class PermissionCheckSerializer(serializers.Serializer):
+    """
+    Serializer representing a request to check whether a permission
+    is granted for a specific app and page.
+    """
+    app_code = serializers.CharField()
+    page_code = serializers.CharField()
+    permission_name = serializers.CharField()
+
+class BulkPermissionCheckSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk permission check request
+    for multiple users and multiple permission checks.
+    """
+    users = serializers.ListField(child=serializers.CharField(), min_length=1)
+    checks = PermissionCheckSerializer(many=True)
+
+class BulkUserPermissionCheckSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk permission check request
+    for the current user across multiple permissions.
+    """
+    checks = PermissionCheckSerializer(many=True)
+
+class GetAccountPermissionNodeSerializer(serializers.Serializer):
+    """
+    Serializer representing a **Permission** node assigned to an account.
+    """
+    permission_id = serializers.IntegerField()
+    permission_name = serializers.CharField()
+
+class GetAccountPageNodeSerializer(serializers.Serializer):
+    """
+    Serializer representing a **Page** node in an account-level
+    permission tree structure.
+    """
+    page_code = serializers.CharField()
+    page_name = serializers.CharField()
+    children = GetAccountPermissionNodeSerializer(many=True, allow_null=True)
+
+class GetAccountAppNodeSerializer(serializers.Serializer):
+    """
+    Serializer representing an **Application** node in an account-level
+    permission tree structure.
+    """
+    app_code = serializers.CharField()
+    app_name = serializers.CharField()
+    children = GetAccountPageNodeSerializer(many=True, allow_null=True)
+
+class SpecialPermissionSerializer(serializers.Serializer):
+    """
+    Serializer representing a special (override) permission
+    assigned at the account level.
+    """
+    page_code = serializers.CharField()
+    permission_name = serializers.CharField()
+    is_allowed = serializers.BooleanField(default=True)  # True=grant, False=revoke
+
+class BulkSpecialPermissionSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to assign special
+    (override) permissions at the account level.
+    """
+    page_code = serializers.CharField()
+    permission_name = serializers.CharField()
+    is_allowed = serializers.BooleanField(default=True)
+
+class BulkSpecialPermissionRequestSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to assign multiple
+    special (override) permissions at the account level.
+    """
+    permissions = BulkSpecialPermissionSerializer(many=True)
+
+class BulkSpecialPermissionResponseSerializer(serializers.Serializer):
+    """
+    Serializer representing the result of a bulk special (override)
+    permission assignment.
+    """
+    page_code = serializers.CharField()
+    permission_name = serializers.CharField()
+    is_allowed = serializers.BooleanField()
+    created = serializers.BooleanField()  # true = newly created, false = update
+
+class ToggleAppSerializer(serializers.Serializer):
+    """
+    Serializer for toggling the active status of an application.
+    """
+    is_active = serializers.BooleanField()
+
+class BulkToggleAppSerializer(serializers.Serializer):
+    """
+    Serializer for toggling the active status of a specific application
+    in bulk operations.
+    """
+    app_code = serializers.CharField()
+    is_active = serializers.BooleanField()
+
+class BulkToggleAppRequestSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to toggle the active status
+    of multiple applications.
+    """
+    apps = BulkToggleAppSerializer(many=True)
+
+class BulkAppItemSerializer(serializers.Serializer):
+    """
+    Serializer representing a single application item in a bulk
+    toggle active status request.
+    """
+    app_code = serializers.CharField()
+    is_active = serializers.BooleanField()
+
+class BulkUserAppsSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to assign or toggle
+    multiple applications for a specific user account.
+    """
+    account_id = serializers.CharField()
+    apps = BulkAppItemSerializer(many=True)
+
+class BulkToggleUsersAppsRequestSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to assign or toggle
+    multiple applications for multiple user accounts.
+    """
+    users = BulkUserAppsSerializer(many=True)
+
+class ToggleUserPageSerializer(serializers.Serializer):
+    """
+    Serializer for enabling or disabling a specific page
+    for a given user account.
+    """
+    is_active = serializers.BooleanField()
+
+class BulkTogglePageItemSerializer(serializers.Serializer):
+    """
+    Serializer representing a single page item in a bulk request
+    to toggle its active status for a user account.
+    """
+    page_code = serializers.CharField()
+    is_active = serializers.BooleanField()
+
+class BulkToggleUserPagesSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to toggle the active status
+    of multiple pages for a single user account.
+    """
+    pages = BulkTogglePageItemSerializer(many=True)
+
+class TogglePageSerializer(serializers.Serializer):
+    """
+    Serializer for enabling or disabling a specific page
+    in the system or for a specific user/account.
+    """
+    page_code = serializers.CharField()
+    is_active = serializers.BooleanField()
+
+class ToggleUserPagesSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to enable or disable multiple
+    pages for a given user account. Each page entry specifies the page code
+    and its desired active state.
+    """
+    account_id = serializers.CharField()
+    pages = TogglePageSerializer(many=True)
+
+class BulkToggleUsersPagesSerializer(serializers.Serializer):
+    """
+    Serializer representing a bulk request to toggle the active status
+    of multiple pages for multiple user accounts.
+    """
+    users = ToggleUserPagesSerializer(many=True)
+
+class AssignUserToBranchSerializer(serializers.Serializer):
+    """Serializer for assigning a user to a branch with a specific role."""
+    account_id = serializers.CharField()
+    role_code = serializers.CharField()
+
+class BulkAssignUsersToBranchSerializer(serializers.Serializer):
+    """Serializer for assigning multiple users to branches with specific roles in bulk."""
+    users = AssignUserToBranchSerializer(many=True)
+
+class RemoveUserFromBranchSerializer(serializers.Serializer):
+    """Serializer for removing a user from a branch with a specific role."""
+    account_id = serializers.CharField()
+    role_code = serializers.CharField()
+
+class BulkRemoveUsersFromBranchSerializer(serializers.Serializer):
+    """Serializer for removing multiple users from branches with specific roles in bulk."""
+    users = RemoveUserFromBranchSerializer(many=True)
+
+class PatchBranchUserRoleSerializer(serializers.Serializer):
+    """Serializer for updating the role of a user within a branch."""
+    role_code = serializers.CharField()
+
+class BulkPatchUserRoleItemSerializer(serializers.Serializer):
+    """Serializer for updating the role of a specific user in bulk operations."""
+    account_id = serializers.CharField()
+    role_code = serializers.CharField()
+
+class BulkPatchUserRoleSerializer(serializers.Serializer):
+    """Serializer for updating roles of multiple users in bulk."""
+    items = BulkPatchUserRoleItemSerializer(many=True)
+
+class CloneRolePermissionSerializer(serializers.Serializer):
+    """Serializer for cloning role permissions with append or replace mode."""
+    mode = serializers.ChoiceField(
+        choices=["append", "replace"],
+        required=False,
+        default="append"
+    )
+
+class CloneAccountSpecialPermissionSerializer(serializers.Serializer):
+    """Serializer for cloning special permissions to target accounts, optionally replacing existing ones."""
+    target_account_ids = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False
+    )
+    replace_existing = serializers.BooleanField(default=False)

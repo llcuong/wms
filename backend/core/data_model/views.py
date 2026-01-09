@@ -3,9 +3,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from collections import defaultdict
+from django.db import transaction
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, inline_serializer, OpenApiTypes
 from .models import *
 from .serializers import *
+from .helper import uppercase_values, build_permission_tree
 
 # Create your views here.
 # post_create_factory Swagger
@@ -176,15 +179,15 @@ def post_create_branch(request):
         status=status.HTTP_201_CREATED
     )
 
-# get_branch_by_id Swagger
+# get_branch_by_code Swagger
 @extend_schema(
     tags=["DmBranch"],
     parameters=[
         OpenApiParameter(
-            name='id',
-            description='Branch ID to retrieve',
+            name='branch_code',
+            description='Branch_code to retrieve',
             required=True,
-            type=int,
+            type=str,
             location=OpenApiParameter.PATH,
         )
     ],
@@ -192,9 +195,9 @@ def post_create_branch(request):
 )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_branch_by_id(request, id):
+def get_branch_by_code(request, branch_code):
     """
-    Retrieve a branch by its ID.
+    Retrieve a branch by its code.
     Path parameter:
     {
         "id"
@@ -209,7 +212,7 @@ def get_branch_by_id(request, id):
     }
     """
     try:
-        branch = DmBranch.objects.get(id=id)
+        branch = DmBranch.objects.get(branch_code=branch_code)
     except DmBranch.DoesNotExist:
         return Response(
             {"error": "Branch not found"},
@@ -318,10 +321,10 @@ def post_create_machine(request):
     tags=["DmMachine"],
     parameters=[
         OpenApiParameter(
-            name='id',
-            description='Machine ID to retrieve',
+            name='machine_code',
+            description='Machine_code to retrieve',
             required=True,
-            type=int,
+            type=str,
             location=OpenApiParameter.PATH,
         )
     ],
@@ -329,9 +332,9 @@ def post_create_machine(request):
 )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_machine_by_id(request, id):
+def get_machine_by_code(request, machine_code):
     """
-    Retrieve a machine by its ID.
+    Retrieve a machine by its code.
     Path parameter:
     {
         "id"
@@ -339,13 +342,13 @@ def get_machine_by_id(request, id):
     Response:
     {
         "id"
-        "machine_code"
+        "branch_code"
         "machine_code"
         "machine_name"
     }
     """
     try:
-        machine = DmMachine.objects.get(id=id)
+        machine = DmMachine.objects.get(machine_code=machine_code)
     except DmMachine.DoesNotExist:
         return Response(
             {"error": "Machine not found"},
@@ -452,10 +455,17 @@ def post_create_machine_line(request):
     tags=["DmMachineLine"],
     parameters=[
         OpenApiParameter(
-            name='id',
-            description='Machine line ID to retrieve',
+            name='machine_code',
+            description='machine_code to retrieve',
             required=True,
-            type=int,
+            type=str,
+            location=OpenApiParameter.PATH,  # path parameter
+        ),
+        OpenApiParameter(
+            name='line_code',
+            description='line_code to retrieve',
+            required=True,
+            type=str,
             location=OpenApiParameter.PATH,  # path parameter
         )
     ],
@@ -463,9 +473,9 @@ def post_create_machine_line(request):
 )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_machine_line_by_id(request, id):
+def get_machine_line_by_code(request, machine_code, line_code):
     """
-    Retrieve a machine line by its ID.
+    Retrieve a machine line by its code.
     Path parameter:
     {
         "id"
@@ -479,7 +489,7 @@ def get_machine_line_by_id(request, id):
     }
     """
     try:
-        line = DmMachineLine.objects.get(id=id)
+        line = DmMachineLine.objects.get(machine_code=machine_code, line_code=line_code)
     except DmMachineLine.DoesNotExist:
         return Response(
             {"error": "Machine line not found"},
@@ -3107,3 +3117,2391 @@ def delete_account_app_page(request, id):
 
     mapping.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+# get_app_page_permission_tree Swagger
+@extend_schema(
+    tags=["Tree"],
+    summary="Get App → Page → Permission tree",
+    description="""
+    Return application tree structure:
+    App → Page → Permission.
+
+    Used for:
+    - Permission management UI
+    - Role permission assignment
+    """,
+    responses=AppNodeSerializer(many=True),
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_app_page_permission_tree(request):
+    """
+    Get App → Page → Permission tree.
+    Response:
+        [
+          {
+            "app_code": "WMS",
+            "app_name": "Warehouse Management",
+            "app_type": "admin",
+            "children": [
+              {
+                "page_code": "INBOUND",
+                "page_name": "Inbound",
+                "children": [
+                  {
+                    "permission_id": 1,
+                    "permission_name": "VIEW"
+                  },
+                  {
+                    "permission_id": 2,
+                    "permission_name": "CREATE"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+    """
+    apps = DmAppName.objects.all().order_by("app_code")
+    serializer = AppNodeSerializer(apps, many=True)
+    return Response(serializer.data)
+
+# get_account_permission_tree
+@extend_schema(
+    tags=["Tree"],
+    summary="Get Account → Role → App → Page → Permission tree",
+    parameters=[
+        OpenApiParameter(
+            name="include_special",
+            type=bool,
+            required=False,
+            description="Include account special permissions"
+        )
+    ],
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_account_permission_tree(request, account_id):
+    """
+    Responses:
+        {
+          "account_id": "qv123",
+          "roles": [
+            {
+              "role_code": "USER",
+              "role_name": "User",
+              "apps": [
+                {
+                  "app_code": "WMS",
+                  "app_name": "Warehouse",
+                  "pages": [
+                    {
+                      "page_code": "USER_MANAGEMENT",
+                      "page_name": "User Management",
+                      "permissions": [
+                        { "permission_name": "VIEW" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "special_permissions": [
+            {
+              "app_code": "WMS",
+              "page_code": "USER_MANAGEMENT",
+              "permission_name": "DELETE",
+              "is_allowed": true
+            }
+          ]
+        }
+    """
+    account = UserAccounts.objects.get(account_id=account_id)
+
+    # ROLE of account
+    role_mappings = (
+        DmMappingAccountRole.objects
+        .filter(account_id=account)
+        .select_related("role_code")
+    )
+    roles = [rm.role_code for rm in role_mappings]
+
+    # ROLE → PERMISSION
+    role_permissions = (
+        DmMappingRolePermission.objects
+        .filter(role_code__in=roles)
+        .select_related(
+            "role_code",
+            "app_code",
+            "page_code",
+            "permission_id"
+        )
+    )
+
+    # role → app → page → permissions
+    role_tree = defaultdict(
+        lambda: defaultdict(
+            lambda: defaultdict(set)
+        )
+    )
+
+    for rp in role_permissions:
+        role_tree[rp.role_code][rp.app_code][rp.page_code].add(
+            rp.permission_id
+        )
+
+    # SPECIAL PERMISSION
+    include_special = request.query_params.get("include_special") == "true"
+
+    special_permissions = []
+    if include_special:
+        special_permissions = (
+            DmMappingAccountSpecialPermission.objects
+            .filter(account_id=account)
+            .select_related(
+                "page_code__app_code",
+                "permission_id"
+            )
+        )
+
+    # SERIALIZE
+    roles_data = RoleTreeSerializer(
+        roles,
+        many=True,
+        context={"role_tree": role_tree}
+    ).data
+
+    special_data = []
+    if include_special:
+        special_data = [
+            {
+                "app_code": sp.page_code.app_code.app_code,
+                "page_code": sp.page_code.page_code,
+                "permission_name": sp.permission_id.permission_name,
+                "is_allowed": sp.is_allowed
+            }
+            for sp in special_permissions
+        ]
+
+    return Response({
+        "account_id": account.account_id,
+        "roles": roles_data,
+        "special_permissions": special_data
+    })
+
+# post_assign_roles_to_account Swagger
+@extend_schema(
+    tags=["Assign"],
+    summary="Assign roles to an account",
+    description="""
+    Assign (replace) roles for an account.
+
+    - Old roles will be removed
+    - New roles will be assigned
+    - Atomic transaction
+    """,
+    request=AssignAccountRoleSerializer,
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_assign_roles_to_account(request, account_id):
+    """
+    Assign roles to an account (replace mode).
+    Request:
+        {
+          "role_codes": ["ADMIN", "SUPERVISOR"]
+        }
+    Response:
+        {
+          "account_id": "viet.nguyen",
+          "roles": [
+            {
+              "role_code": "ADMIN",
+              "role_name": "Administrator"
+            },
+            {
+              "role_code": "SUPERVISOR",
+              "role_name": "Supervisor"
+            }
+          ]
+        }
+    """
+    serializer = AssignAccountRoleSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    account = UserAccounts.objects.get(account_id=account_id)
+    role_codes = serializer.validated_data["role_codes"]
+
+    roles = DmRoles.objects.filter(role_code__in=role_codes)
+
+    with transaction.atomic():
+        # Remove old roles
+        DmMappingAccountRole.objects.filter(
+            account_id=account
+        ).delete()
+
+        # Assign new roles
+        DmMappingAccountRole.objects.bulk_create([
+            DmMappingAccountRole(
+                account_id=account,
+                role_code=role,
+                created_by=request.user.id
+            )
+            for role in roles
+        ])
+
+        # Optional: invalidate permission cache
+        account.account_token_version += 1
+        account.save(update_fields=["account_token_version"])
+
+    return Response({
+        "account_id": account.account_id,
+        "roles": [
+            {
+                "role_code": r.role_code,
+                "role_name": r.role_name
+            }
+            for r in roles
+        ]
+    })
+
+# post_assign_account_branch_roles Swagger
+@extend_schema(
+    tags=["Assign"],
+    summary="Assign account to branch with roles",
+    description="""
+    Assign (replace) roles for an account in a specific branch.
+
+    - Remove old roles of the account in the branch
+    - Assign new roles
+    - Atomic transaction
+    """,
+    request=AssignAccountBranchRoleSerializer,
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_assign_account_branch_roles(request, account_id, branch_code):
+    """
+    Assign account to a branch with specific roles.
+    Request:
+        {
+          "role_codes": ["MANAGER", "OPERATOR"]
+        }
+    Response:
+        {
+          "account_id": "viet.nguyen",
+          "branch_code": "BRANCH_01",
+          "roles": [
+            {
+              "role_code": "MANAGER",
+              "role_name": "Branch Manager"
+            },
+            {
+              "role_code": "OPERATOR",
+              "role_name": "Machine Operator"
+            }
+          ]
+        }
+    """
+    serializer = AssignAccountBranchRoleSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    account = UserAccounts.objects.get(account_id=account_id)
+    branch = DmBranch.objects.get(branch_code=branch_code)
+
+    role_codes = serializer.validated_data["role_codes"]
+    roles = DmRoles.objects.filter(role_code__in=role_codes)
+
+    with transaction.atomic():
+        # Remove old mappings
+        DmMappingAccountBranch.objects.filter(
+            account_id=account,
+            branch_code=branch
+        ).delete()
+
+        # Create new mappings
+        DmMappingAccountBranch.objects.bulk_create([
+            DmMappingAccountBranch(
+                account_id=account,
+                branch_code=branch,
+                role_code=role
+            )
+            for role in roles
+        ])
+
+        # Optional: invalidate permission cache
+        if hasattr(account, "account_token_version"):
+            account.account_token_version += 1
+            account.save(update_fields=["account_token_version"])
+
+    return Response({
+        "account_id": account.account_id,
+        "branch_code": branch.branch_code,
+        "roles": [
+            {
+                "role_code": r.role_code,
+                "role_name": r.role_name
+            }
+            for r in roles
+        ]
+    })
+
+# # post_assign_role_page_permissions
+@extend_schema(
+    tags=["Role"],
+    summary="Assign role → page → permission (bulk)",
+    description="""
+Assign multiple permissions to a role by page.
+**All existing permissions of this role in the app will be deleted before assignment.**
+""",
+    request=AssignRolePagePermissionSerializer,
+    responses=AssignRolePagePermissionSerializer
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_assign_role_page_permissions(request, role_code, app_code):
+    """
+    Assign permissions to a role by page (bulk).
+    **Xóa tất cả permission cũ của role trong app trước khi gán mới.**
+
+    Request:
+    {
+      "pages": [
+        {
+          "page_code": "USER_MANAGEMENT",
+          "permissions": ["VIEW", "CREATE", "UPDATE"]
+        }
+      ]
+    }
+
+    Response:
+    {
+      "role_code": "ADMIN",
+      "app_code": "WMS",
+      "pages": [
+        {
+          "page_code": "USER_MANAGEMENT",
+          "permissions": ["VIEW", "CREATE", "UPDATE"]
+        }
+      ]
+    }
+    """
+    serializer = AssignRolePagePermissionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    role = DmRoles.objects.get(role_code=role_code)
+    app = DmAppName.objects.get(app_code=app_code)
+    pages_data = serializer.validated_data["pages"]
+
+    bulk_mappings = []
+
+    with transaction.atomic():
+        # Delete all old role mappings in the app
+        DmMappingRolePermission.objects.filter(role_code=role, app_code=app).delete()
+
+        for page_item in pages_data:
+            page = DmAppPageName.objects.get(page_code=page_item["page_code"], app_code=app)
+
+            # Get valid permission
+            permissions = DmPermissions.objects.filter(
+                permission_name__in=page_item["permissions"]
+            )
+
+            for perm in permissions:
+                bulk_mappings.append(
+                    DmMappingRolePermission(
+                        role_code=role,
+                        app_code=app,
+                        page_code=page,
+                        permission_id=perm,
+                        created_by=request.user.id
+                    )
+                )
+
+        DmMappingRolePermission.objects.bulk_create(bulk_mappings)
+
+    return Response({
+        "role_code": role.role_code,
+        "app_code": app.app_code,
+        "pages": pages_data
+    })
+
+# get_role_permission_tree Swagger
+@extend_schema(
+    tags=["Tree"],
+    summary="Get Role → App → Page → Permission tree",
+    description="""
+    Return permission tree of a role.
+
+    Structure:
+    Role → App → Page → Permission
+    """,
+    responses=RolePermissionTreeSerializer
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_role_permission_tree(request, role_code):
+    """
+    Get permission tree of role.
+    Response:
+        {
+          "role_code": "ADMIN",
+          "role_name": "Administrator",
+          "children": [
+            {
+              "app_code": "WMS",
+              "app_name": "Warehouse",
+              "children": [
+                {
+                  "page_code": "USER_MANAGEMENT",
+                  "page_name": "User Management",
+                  "children": [
+                    {
+                      "permission_id": 1,
+                      "permission_name": "VIEW"
+                    },
+                    {
+                      "permission_id": 2,
+                      "permission_name": "CREATE"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+    """
+    role = DmRoles.objects.get(role_code=role_code)
+
+    mappings = (
+        DmMappingRolePermission.objects
+        .select_related("app_code", "page_code", "permission_id")
+        .filter(role_code=role)
+        .order_by("app_code__app_code", "page_code__page_code")
+    )
+
+    tree = defaultdict(lambda: defaultdict(list))
+
+    for m in mappings:
+        tree[m.app_code].setdefault(m.page_code, []).append({
+            "permission_id": m.permission_id.permission_id,
+            "permission_name": m.permission_id.permission_name
+        })
+
+    app_nodes = []
+    for app, pages in tree.items():
+        page_nodes = []
+        for page, perms in pages.items():
+            page_nodes.append({
+                "page_code": page.page_code,
+                "page_name": page.page_name,
+                "children": perms
+            })
+
+        app_nodes.append({
+            "app_code": app.app_code,
+            "app_name": app.app_name,
+            "children": page_nodes
+        })
+
+    response_data = {
+        "role_code": role.role_code,
+        "role_name": role.role_name,
+        "children": app_nodes
+    }
+
+    return Response(response_data)
+
+# post_append_role_permission Swagger
+@extend_schema(
+    tags=["Append"],
+    summary="Append permission to role (no delete old)",
+    description="""
+    Append permissions for a role in an app.
+    - Old permissions are kept
+    - Existing mappings are skipped
+    """,
+    request=AppendRolePermissionSerializer,
+    responses={
+        200: OpenApiResponse(
+            description="Append permission success",
+            examples=[
+                {
+                "role_code": "ADMIN",
+                "app_code": "WMS",
+                "inserted": 4,
+                "skipped": 1
+                }
+            ]
+        )
+    }
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_append_role_permission(request, role_code, app_code):
+    """
+    Append permission (no delete old).
+    Request:
+        {
+          "pages": [
+            {
+              "page_code": "USER_MANAGEMENT",
+              "permission_ids": [1, 2, 3]
+            },
+            {
+              "page_code": "REPORT",
+              "permission_ids": [1]
+            }
+          ]
+        }
+    Response:
+        {
+          "role_code": "ADMIN",
+          "app_code": "WMS",
+          "inserted": 4,
+          "skipped": 1
+        }
+    """
+    serializer = AppendRolePermissionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    role = DmRoles.objects.get(role_code=role_code)
+    app = DmAppName.objects.get(app_code=app_code)
+
+    inserted = 0
+    skipped = 0
+
+    with transaction.atomic():
+        for page_item in serializer.validated_data["pages"]:
+            page = DmAppPageName.objects.get(
+                app_code=app,
+                page_code=page_item["page_code"]
+            )
+
+            for perm_id in page_item["permission_ids"]:
+                permission = DmPermissions.objects.get(permission_id=perm_id)
+
+                obj, created = DmMappingRolePermission.objects.get_or_create(
+                    role_code=role,
+                    app_code=app,
+                    page_code=page,
+                    permission_id=permission,
+                    defaults={
+                        "created_by": request.user.id,
+                        "updated_by": request.user.id,
+                    }
+                )
+
+                if created:
+                    inserted += 1
+                else:
+                    skipped += 1
+
+    return Response({
+        "role_code": role_code,
+        "app_code": app_code,
+        "inserted": inserted,
+        "skipped": skipped,
+    })
+
+# post_append_account_role Swagger
+@extend_schema(
+    tags=["Append"],
+    summary="Append role(s) to account (keep old roles)",
+    description="""
+Append role(s) for an account.
+- Existing roles are kept
+- Duplicate roles are skipped
+""",
+    request=AppendAccountRoleSerializer,
+    responses={
+        200: OpenApiResponse(
+            description="Append role success",
+            examples=[
+                {
+                "account_id": "user001",
+                "inserted": 2,
+                "skipped": 0
+                }
+            ]
+        )
+    }
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_append_account_role(request, account_id):
+    """
+    Append role(s) to account without removing existing roles.
+    Request:
+        {
+          "role_codes": ["ADMIN", "SUPERVISOR"]
+        }
+    Response:
+        {
+          "account_id": "user001",
+          "inserted": 2,
+          "skipped": 0
+        }
+    """
+    serializer = AppendAccountRoleSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    account = UserAccounts.objects.get(account_id=account_id)
+    inserted = 0
+    skipped = 0
+
+    with transaction.atomic():
+        for role_code in serializer.validated_data["role_codes"]:
+            role = DmRoles.objects.get(role_code=role_code)
+            obj, created = DmMappingAccountRole.objects.get_or_create(
+                account_id=account,
+                role_code=role,
+                defaults={
+                    "created_by": request.user.id,
+                    "updated_by": request.user.id,
+                }
+            )
+            if created:
+                inserted += 1
+            else:
+                skipped += 1
+
+    return Response({
+        "account_id": account_id,
+        "inserted": inserted,
+        "skipped": skipped
+    })
+
+# get_check_user_permission Swagger
+@extend_schema(
+    tags=["User Permission"],
+    summary="Check if a user has a permission (real-time)",
+    description="Check user permission based on roles and special permissions.",
+    parameters=[
+        OpenApiParameter("account_id", str, OpenApiParameter.PATH),
+        OpenApiParameter("app_code", str, OpenApiParameter.QUERY),
+        OpenApiParameter("page_code", str, OpenApiParameter.QUERY),
+        OpenApiParameter("permission_name", str, OpenApiParameter.QUERY),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Permission check result",
+            examples=[
+                {
+                    "account_id": "USER001",
+                    "app_code": "WMS",
+                    "page_code": "USER_MANAGEMENT",
+                    "permission_name": "VIEW",
+                    "allowed": True
+                }
+            ]
+        ),
+        404: OpenApiResponse(description="User not found")
+    }
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_check_user_permission(request, account_id):
+    """
+    Check if user has a specific permission in real-time.
+    Responses:
+        {
+          "account_id": "USER001",
+          "app_code": "WMS",
+          "page_code": "USER_MANAGEMENT",
+          "permission_name": "VIEW",
+          "allowed": true
+        }
+    """
+    app_code = request.query_params.get("app_code")
+    page_code = request.query_params.get("page_code")
+    permission_name = request.query_params.get("permission_name")
+
+    if not all([app_code, page_code, permission_name]):
+        return Response(
+            {"detail": "app_code, page_code, permission_name are required"},
+            status=400
+        )
+
+    try:
+        user = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"detail": "User not found"}, status=404)
+
+    allowed = user.has_permission(app_code, page_code, permission_name)
+
+    return Response({
+        "account_id": account_id,
+        "app_code": app_code,
+        "page_code": page_code,
+        "permission_name": permission_name,
+        "allowed": allowed
+    })
+
+# post_bulk_check_permissions Swagger
+@extend_schema(
+    tags=["User Permission"],
+    summary="Bulk check permissions for multiple users",
+    description="""
+    Check a list of permissions for multiple users in real-time.
+    """,
+    request=BulkPermissionCheckSerializer,
+    responses={
+        200: OpenApiResponse(description="Bulk permission check results")
+    }
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_bulk_check_permissions(request):
+    """
+    Bulk check permissions for multiple users.
+    Request:
+        {
+          "users": ["USER001", "USER002"],
+          "checks": [
+            {
+              "app_code": "WMS",
+              "page_code": "USER_MANAGEMENT",
+              "permission_name": "VIEW"
+            },
+            {
+              "app_code": "WMS",
+              "page_code": "INVENTORY",
+              "permission_name": "EDIT"
+            }
+          ]
+        }
+    Responses:
+        [
+          {
+            "account_id": "USER001",
+            "app_code": "WMS",
+            "page_code": "USER_MANAGEMENT",
+            "permission_name": "VIEW",
+            "allowed": true
+          },
+          {
+            "account_id": "USER001",
+            "app_code": "WMS",
+            "page_code": "INVENTORY",
+            "permission_name": "EDIT",
+            "allowed": false
+          },
+          {
+            "account_id": "USER002",
+            "app_code": "WMS",
+            "page_code": "USER_MANAGEMENT",
+            "permission_name": "VIEW",
+            "allowed": true
+          },
+          {
+            "account_id": "USER002",
+            "app_code": "WMS",
+            "page_code": "INVENTORY",
+            "permission_name": "EDIT",
+            "allowed": true
+          }
+        ]
+    """
+    serializer = BulkPermissionCheckSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    users = UserAccounts.objects.filter(account_id__in=data['users']).prefetch_related('dmmappingaccountrole_set')
+    results = []
+
+    # Create a dictionary to map account_id -> roles
+    user_roles_map = {user.account_id: list(user.dmmappingaccountrole_set.values_list('role_code', flat=True)) for user in users}
+
+    # Loop through each user and each check
+    for user_id in data['users']:
+        role_codes = user_roles_map.get(user_id, [])
+        for check in data['checks']:
+            allowed = DmMappingRolePermission.objects.filter(
+                role_code__role_code__in=role_codes,
+                app_code__app_code=check['app_code'],
+                page_code__page_code=check['page_code'],
+                permission_id__permission_name=check['permission_name']
+            ).exists()
+
+            results.append({
+                "account_id": user_id,
+                "app_code": check['app_code'],
+                "page_code": check['page_code'],
+                "permission_name": check['permission_name'],
+                "allowed": allowed
+            })
+
+    return Response(results)
+
+# post_bulk_check_user_permissions Swagger
+@extend_schema(
+    tags=["User Permission"],
+    summary="Bulk check permissions for a single user",
+    description="""
+    Check a list of permissions for a single user in real-time.
+    """,
+    request=BulkUserPermissionCheckSerializer,
+    responses={
+        200: OpenApiResponse(description="Bulk permission check results")
+    }
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_bulk_check_user_permissions(request):
+    """
+    Bulk check permissions for a single user.
+    Request:
+        {
+          "checks": [
+            {
+              "app_code": "WMS",
+              "page_code": "USER_MANAGEMENT",
+              "permission_name": "VIEW"
+            },
+            {
+              "app_code": "WMS",
+              "page_code": "INVENTORY",
+              "permission_name": "EDIT"
+            }
+          ]
+        }
+    Responses:
+        [
+          {
+            "app_code": "WMS",
+            "page_code": "USER_MANAGEMENT",
+            "permission_name": "VIEW",
+            "allowed": true
+          },
+          {
+            "app_code": "WMS",
+            "page_code": "INVENTORY",
+            "permission_name": "EDIT",
+            "allowed": false
+          }
+        ]
+    """
+    serializer = BulkUserPermissionCheckSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    user = request.user
+    try:
+        account = user.user_account  # UserAccounts
+    except UserAccounts.DoesNotExist:
+        return Response(
+            {"detail": "User account not found"},
+            status=404
+        )
+
+    role_codes = account.dmmappingaccountrole_set.values_list(
+        "role_code__role_code", flat=True
+    )
+    results = []
+
+    for check in data['checks']:
+        allowed = DmMappingRolePermission.objects.filter(
+            role_code__role_code__in=role_codes,
+            app_code__app_code=check['app_code'],
+            page_code__page_code=check['page_code'],
+            permission_id__permission_name=check['permission_name']
+        ).exists()
+
+        results.append({
+            "app_code": check['app_code'],
+            "page_code": check['page_code'],
+            "permission_name": check['permission_name'],
+            "allowed": allowed
+        })
+
+    return Response(results)
+
+# get_account_permissions Swagger
+@extend_schema(
+    tags=["User Permission"],
+    summary="Get all permissions of logged-in user",
+    description="Return full tree of App → Page → Permission for current user.",
+    responses={200: GetAccountAppNodeSerializer(many=True)}
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_account_permissions(request):
+    """
+    Return all permissions of logged-in user in tree format.
+    """
+    user: UserAccounts = request.user.user_account
+
+    # Get the user's role list
+    role_codes = list(user.dmmappingaccountrole_set.values_list('role_code', flat=True))
+    if not role_codes:
+        return Response([])
+
+    # Get all permission mappings of the roles
+    mappings = DmMappingRolePermission.objects.filter(
+        role_code__role_code__in=role_codes
+    ).select_related('app_code', 'page_code', 'permission_id').order_by('app_code', 'page_code')
+
+    # 3. Build tree
+    tree = {}
+    for m in mappings:
+        app = tree.setdefault(m.app_code.app_code, {
+            "app_code": m.app_code.app_code,
+            "app_name": m.app_code.app_name,
+            "children": {}
+        })
+        page = app['children'].setdefault(m.page_code.page_code, {
+            "page_code": m.page_code.page_code,
+            "page_name": m.page_code.page_name,
+            "children": []
+        })
+        page['children'].append({
+            "permission_id": m.permission_id.permission_id,
+            "permission_name": m.permission_id.permission_name
+        })
+
+    # Convert dict tree → list tree, set children=null if empty
+    result = []
+    for app in tree.values():
+        pages_list = []
+        for page in app['children'].values():
+            if not page['children']:
+                page['children'] = None
+            pages_list.append(page)
+        app['children'] = pages_list if pages_list else None
+        result.append(app)
+
+    return Response(result)
+
+# post_grant_special_permission Swagger
+@extend_schema(
+    tags=["User Special Permission"],
+    summary="Grant or revoke special permission for a user",
+    description="""
+    Append (grant) or revoke a special permission directly for a user.
+    """,
+    request=SpecialPermissionSerializer,
+    responses={200: OpenApiResponse(description="Special permission applied")}
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_grant_special_permission(request, account_id):
+    """
+    Grant or revoke special permission for a user.
+    Request:
+        {
+          "page_code": "INVENTORY",
+          "permission_name": "EDIT",
+          "is_allowed": true
+        }
+    Response:
+        {
+          "account_id": "USER001",
+          "page_code": "INVENTORY",
+          "permission_name": "EDIT",
+          "is_allowed": true,
+          "created": true
+        }
+    """
+    serializer = SpecialPermissionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    try:
+        user = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"detail": "User not found"}, status=404)
+
+    try:
+        page = DmAppPageName.objects.get(page_code=data['page_code'])
+        permission = DmPermissions.objects.get(permission_name=data['permission_name'])
+    except (DmAppPageName.DoesNotExist, DmPermissions.DoesNotExist):
+        return Response({"detail": "Page or Permission not found"}, status=404)
+
+    # Update or create special permission
+    obj, created = DmMappingAccountSpecialPermission.objects.update_or_create(
+        account_id=user,
+        page_code=page,
+        permission_id=permission,
+        defaults={
+            "is_allowed": data['is_allowed'],
+            "created_by": request.user.id if hasattr(request.user, "id") else 0,
+            "updated_by": request.user.id if hasattr(request.user, "id") else 0
+        }
+    )
+
+    return Response({
+        "account_id": user.account_id,
+        "page_code": page.page_code,
+        "permission_name": permission.permission_name,
+        "is_allowed": obj.is_allowed,
+        "created": created
+    })
+
+# delete_revoke_special_permission Swagger
+@extend_schema(
+    tags=["User Special Permission"],
+    summary="Remove special permission for a user",
+    description="""
+    Delete a special permission entry for a user.
+    """,
+    responses={200: OpenApiResponse(description="Special permission removed")}
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_revoke_special_permission(request, account_id, page_code, permission_name):
+    """
+    Delete special permission for a user.
+    Response:
+        {
+          "account_id": "USER001",
+          "page_code": "INVENTORY",
+          "permission_name": "EDIT",
+          "deleted": true
+        }
+    """
+    try:
+        user = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"detail": "User not found"}, status=404)
+
+    try:
+        page = DmAppPageName.objects.get(page_code=page_code)
+        permission = DmPermissions.objects.get(permission_name=permission_name)
+    except (DmAppPageName.DoesNotExist, DmPermissions.DoesNotExist):
+        return Response({"detail": "Page or Permission not found"}, status=404)
+
+    deleted, _ = DmMappingAccountSpecialPermission.objects.filter(
+        account_id=user,
+        page_code=page,
+        permission_id=permission
+    ).delete()
+
+    return Response({
+        "account_id": user.account_id,
+        "page_code": page.page_code,
+        "permission_name": permission.permission_name,
+        "deleted": bool(deleted)
+    })
+
+# post_bulk_special_permission Swagger
+@extend_schema(
+    tags=["User Special Permission"],
+    summary="Bulk grant/revoke special permissions for a user",
+    description="""
+    Grant or revoke multiple special permissions for a single user in one request.
+    """,
+    request=BulkSpecialPermissionRequestSerializer,
+    responses={200: BulkSpecialPermissionResponseSerializer(many=True)}
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_bulk_special_permission(request, account_id):
+    """
+    Grant or revoke multiple special permissions for a user.
+    Request:
+        {
+          "permissions": [
+            {"page_code": "INVENTORY", "permission_name": "VIEW", "is_allowed": true},
+            {"page_code": "INVENTORY", "permission_name": "EDIT", "is_allowed": true},
+            {"page_code": "USER_MANAGEMENT", "permission_name": "DELETE", "is_allowed": false}
+          ]
+        }
+    Responses:
+        [
+          {"page_code": "INVENTORY", "permission_name": "VIEW", "is_allowed": true, "created": true},
+          {"page_code": "INVENTORY", "permission_name": "EDIT", "is_allowed": true, "created": true},
+          {"page_code": "USER_MANAGEMENT", "permission_name": "DELETE", "is_allowed": false, "created": true}
+        ]
+    """
+    serializer = BulkSpecialPermissionRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    permissions = serializer.validated_data['permissions']
+
+    try:
+        user = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"detail": "User not found"}, status=404)
+
+    response_data = []
+
+    for perm in permissions:
+        # Validate page and permission
+        try:
+            page = DmAppPageName.objects.get(page_code=perm['page_code'])
+            permission = DmPermissions.objects.get(permission_name=perm['permission_name'])
+        except (DmAppPageName.DoesNotExist, DmPermissions.DoesNotExist):
+            response_data.append({
+                "page_code": perm['page_code'],
+                "permission_name": perm['permission_name'],
+                "is_allowed": perm['is_allowed'],
+                "created": False,
+                "error": "Page or Permission not found"
+            })
+            continue
+
+        # Create or update
+        obj, created = DmMappingAccountSpecialPermission.objects.update_or_create(
+            account_id=user,
+            page_code=page,
+            permission_id=permission,
+            defaults={
+                "is_allowed": perm['is_allowed'],
+                "created_by": request.user.id if hasattr(request.user, "id") else 0,
+                "updated_by": request.user.id if hasattr(request.user, "id") else 0
+            }
+        )
+
+        response_data.append({
+            "page_code": page.page_code,
+            "permission_name": permission.permission_name,
+            "is_allowed": obj.is_allowed,
+            "created": created
+        })
+
+    return Response(response_data)
+
+# post_toggle_user_app Swagger
+@extend_schema(
+    tags=["User App Access"],
+    summary="Toggle App access for a user",
+    description="""
+    Enable or disable a specific App for a user.
+    """,
+    request=ToggleAppSerializer,
+    responses={200: OpenApiResponse(description="App access updated")}
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_toggle_user_app(request, account_id, app_code):
+    """
+    Enable or disable App for a user.
+    Request:
+        {
+          "is_active": true
+        }
+    Response:
+        {
+          "account_id": "USER001",
+          "app_code": "INVENTORY",
+          "is_active": true,
+          "created": true
+        }
+    """
+    serializer = ToggleAppSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    is_active = serializer.validated_data['is_active']
+
+    try:
+        user = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"detail": "User not found"}, status=404)
+
+    try:
+        app = DmAppName.objects.get(app_code=app_code)
+    except DmAppName.DoesNotExist:
+        return Response({"detail": "App not found"}, status=404)
+
+    # Update or create mapping
+    obj, created = DmMappingAccountApp.objects.update_or_create(
+        account_id=user,
+        app_code=app,
+        defaults={
+            "is_active": is_active,
+            "created_by": request.user.id if hasattr(request.user, "id") else 0
+        }
+    )
+
+    return Response({
+        "account_id": user.account_id,
+        "app_code": app.app_code,
+        "is_active": obj.is_active,
+        "created": created
+    })
+
+# post_bulk_toggle_user_apps Swagger
+@extend_schema(
+    tags=["User App Access"],
+    summary="Bulk toggle App access for a user",
+    description="""
+    Enable or disable multiple Apps for a single user in one request.
+    """,
+    request=BulkToggleAppRequestSerializer,
+    responses={200: OpenApiResponse(description="Apps access updated")}
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_bulk_toggle_user_apps(request, account_id):
+    """
+    Enable or disable multiple Apps for a user.
+    Request:
+        {
+          "apps": [
+            {"app_code": "INVENTORY", "is_active": true},
+            {"app_code": "REPORT", "is_active": false},
+            {"app_code": "USER_MANAGEMENT", "is_active": true}
+          ]
+        }
+    Responses:
+        [
+          {"app_code": "INVENTORY", "is_active": true, "created": true},
+          {"app_code": "REPORT", "is_active": false, "created": true},
+          {"app_code": "USER_MANAGEMENT", "is_active": true, "created": true}
+        ]
+    """
+    serializer = BulkToggleAppRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    apps = serializer.validated_data['apps']
+
+    try:
+        user = UserAccounts.objects.get(account_id=account_id)
+    except UserAccounts.DoesNotExist:
+        return Response({"detail": "User not found"}, status=404)
+
+    response_data = []
+
+    for app_item in apps:
+        app_code = app_item['app_code']
+        is_active = app_item['is_active']
+
+        try:
+            app = DmAppName.objects.get(app_code=app_code)
+        except DmAppName.DoesNotExist:
+            response_data.append({
+                "app_code": app_code,
+                "is_active": is_active,
+                "created": False,
+                "error": "App not found"
+            })
+            continue
+
+        obj, created = DmMappingAccountApp.objects.update_or_create(
+            account_id=user,
+            app_code=app,
+            defaults={
+                "is_active": is_active,
+                "created_by": request.user.id if hasattr(request.user, "id") else 0
+            }
+        )
+
+        response_data.append({
+            "app_code": app.app_code,
+            "is_active": obj.is_active,
+            "created": created
+        })
+
+    return Response(response_data)
+
+# post_bulk_toggle_users_apps Swagger
+@extend_schema(
+    tags=["User App Access"],
+    summary="Bulk toggle multiple Apps for multiple users",
+    description="Enable or disable multiple Apps for multiple users in one request.",
+    request=BulkToggleUsersAppsRequestSerializer,
+    responses={200: OpenApiResponse(description="Bulk apps access updated")}
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_bulk_toggle_users_apps(request):
+    """
+    Enable or disable multiple Apps for multiple users in one request.
+    Request:
+        {
+          "users": [
+            {
+              "account_id": "USER001",
+              "apps": [
+                {"app_code": "INVENTORY", "is_active": true},
+                {"app_code": "REPORT", "is_active": false}
+              ]
+            },
+            {
+              "account_id": "USER002",
+              "apps": [
+                {"app_code": "INVENTORY", "is_active": false},
+                {"app_code": "USER_MANAGEMENT", "is_active": true}
+              ]
+            }
+          ]
+        }
+    Response:
+        [
+          {
+            "account_id": "USER001",
+            "apps": [
+              {"app_code": "INVENTORY", "is_active": true, "created": true},
+              {"app_code": "REPORT", "is_active": false, "created": true}
+            ]
+          },
+          {
+            "account_id": "USER002",
+            "apps": [
+              {"app_code": "INVENTORY", "is_active": false, "created": true},
+              {"app_code": "USER_MANAGEMENT", "is_active": true, "created": true}
+            ]
+          }
+        ]
+    """
+    serializer = BulkToggleUsersAppsRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    users_data = serializer.validated_data['users']
+
+    response_data = []
+
+    for user_item in users_data:
+        account_id = user_item['account_id']
+        apps = user_item['apps']
+
+        try:
+            user = UserAccounts.objects.get(account_id=account_id)
+        except UserAccounts.DoesNotExist:
+            response_data.append({
+                "account_id": account_id,
+                "apps": [{"app_code": a['app_code'], "is_active": a['is_active'], "created": False, "error": "User not found"} for a in apps]
+            })
+            continue
+
+        user_apps_result = []
+
+        for app_item in apps:
+            app_code = app_item['app_code']
+            is_active = app_item['is_active']
+
+            try:
+                app = DmAppName.objects.get(app_code=app_code)
+            except DmAppName.DoesNotExist:
+                user_apps_result.append({
+                    "app_code": app_code,
+                    "is_active": is_active,
+                    "created": False,
+                    "error": "App not found"
+                })
+                continue
+
+            obj, created = DmMappingAccountApp.objects.update_or_create(
+                account_id=user,
+                app_code=app,
+                defaults={
+                    "is_active": is_active,
+                    "created_by": request.user.id if hasattr(request.user, "id") else 0
+                }
+            )
+
+            user_apps_result.append({
+                "app_code": app.app_code,
+                "is_active": obj.is_active,
+                "created": created
+            })
+
+        response_data.append({
+            "account_id": user.account_id,
+            "apps": user_apps_result
+        })
+
+    return Response(response_data)
+
+# post_toggle_user_page Swagger
+@extend_schema(
+    tags=["User Page Access"],
+    summary="Enable / Disable Page for User",
+    description=(
+        "Toggle page access for a user. "
+        "This does not affect role or permissions, only page visibility."
+    ),
+    parameters=[
+        OpenApiParameter(name="account_id", location=OpenApiParameter.PATH, required=True),
+        OpenApiParameter(name="app_code", location=OpenApiParameter.PATH, required=True),
+        OpenApiParameter(name="page_code", location=OpenApiParameter.PATH, required=True),
+    ],
+    request=ToggleUserPageSerializer,
+    responses={200: None},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_toggle_user_page(request, account_id, app_code, page_code):
+    """
+    Enable or disable a page for a specific user.
+    Request:
+        {
+          "is_active": true
+        }
+    Response:
+        {
+          "account_id": "A001",
+          "app_code": "WMS",
+          "page_code": "USER_MANAGEMENT",
+          "is_active": true,
+          "created": true
+        }
+    """
+    serializer = ToggleUserPageSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    is_active = serializer.validated_data["is_active"]
+
+    user = UserAccounts.objects.get(account_id=account_id)
+    app = DmAppName.objects.get(app_code=app_code)
+    page = DmAppPageName.objects.get(page_code=page_code, app_code=app)
+
+    obj, created = DmMappingAccountAppPage.objects.update_or_create(
+        account_id=user,
+        app_code=app,
+        page_code=page,
+        defaults={
+            "is_active": is_active,
+            "created_by": request.user.id if hasattr(request.user, "id") else 0,
+        },
+    )
+
+    return Response({
+        "account_id": user.account_id,
+        "app_code": app.app_code,
+        "page_code": page.page_code,
+        "is_active": obj.is_active,
+        "created": created,
+    })
+
+# post_bulk_toggle_user_pages Swagger
+@extend_schema(
+    tags=["User Page Access"],
+    summary="Bulk enable / disable pages for user",
+    description="""
+    - Enable or disable multiple pages for a user in a specific app.
+    - This does not affect role or permissions.
+        """,
+    parameters=[
+        OpenApiParameter(name="account_id", location=OpenApiParameter.PATH, required=True),
+        OpenApiParameter(name="app_code", location=OpenApiParameter.PATH, required=True),
+    ],
+    request=BulkToggleUserPagesSerializer,
+    responses={200: None},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_bulk_toggle_user_pages(request, account_id, app_code):
+    """
+    Bulk enable / disable pages for a user.
+    Request:
+        {
+          "pages": [
+            {
+              "page_code": "PRODUCT",
+              "is_active": true
+            },
+            {
+              "page_code": "CATEGORY",
+              "is_active": false
+            }
+          ]
+        }
+    Response:
+        {
+          "account_id": "USER001",
+          "app_code": "INVENTORY",
+          "results": [
+            {
+              "page_code": "PRODUCT",
+              "is_active": true,
+              "created": true
+            },
+            {
+              "page_code": "CATEGORY",
+              "is_active": false,
+              "created": false
+            }
+          ]
+        }
+    """
+    serializer = BulkToggleUserPagesSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    user = UserAccounts.objects.get(account_id=account_id)
+    app = DmAppName.objects.get(app_code=app_code)
+
+    results = []
+
+    for item in serializer.validated_data["pages"]:
+        page = DmAppPageName.objects.get(
+            page_code=item["page_code"],
+            app_code=app,
+        )
+
+        obj, created = DmMappingAccountAppPage.objects.update_or_create(
+            account_id=user,
+            app_code=app,
+            page_code=page,
+            defaults={
+                "is_active": item["is_active"],
+                "created_by": request.user.id if hasattr(request.user, "id") else 0,
+            },
+        )
+
+        results.append({
+            "page_code": page.page_code,
+            "is_active": obj.is_active,
+            "created": created,
+        })
+
+    return Response({
+        "account_id": user.account_id,
+        "app_code": app.app_code,
+        "results": results,
+    })
+
+# post_bulk_toggle_pages_for_users Swagger
+@extend_schema(
+    tags=["User Page Access"],
+    summary="Bulk enable / disable pages for multiple users",
+    description=(
+        "Bulk enable or disable pages for multiple users in one application. "
+        "This API only affects page visibility, not role or permission."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="app_code",
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="Application code"
+        ),
+    ],
+    request=BulkToggleUsersPagesSerializer,
+    responses={200: None},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def post_bulk_toggle_pages_for_users(request, app_code):
+    """
+    Request:
+        {
+          "users": [
+            {
+              "account_id": "USER001",
+              "pages": [
+                { "page_code": "PRODUCT", "is_active": true },
+                { "page_code": "CATEGORY", "is_active": false }
+              ]
+            },
+            {
+              "account_id": "USER002",
+              "pages": [
+                { "page_code": "PRODUCT", "is_active": true }
+              ]
+            }
+          ]
+        }
+    Responses:
+        {
+          "app_code": "INVENTORY",
+          "results": [
+            {
+              "account_id": "USER001",
+              "pages": [
+                {
+                  "page_code": "PRODUCT",
+                  "is_active": true,
+                  "created": true
+                },
+                {
+                  "page_code": "CATEGORY",
+                  "is_active": false,
+                  "created": false
+                }
+              ]
+            },
+            {
+              "account_id": "USER002",
+              "pages": [
+                {
+                  "page_code": "PRODUCT",
+                  "is_active": true,
+                  "created": false
+                }
+              ]
+            }
+          ]
+        }
+    """
+    serializer = BulkToggleUsersPagesSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    app = DmAppName.objects.get(app_code=app_code)
+
+    results = []
+
+    for user_item in serializer.validated_data["users"]:
+        user = UserAccounts.objects.get(account_id=user_item["account_id"])
+        page_results = []
+
+        for page_item in user_item["pages"]:
+            page = DmAppPageName.objects.get(
+                page_code=page_item["page_code"],
+                app_code=app,
+            )
+
+            obj, created = DmMappingAccountAppPage.objects.update_or_create(
+                account_id=user,
+                app_code=app,
+                page_code=page,
+                defaults={
+                    "is_active": page_item["is_active"],
+                    "created_by": request.user.id if hasattr(request.user, "id") else 0,
+                },
+            )
+
+            page_results.append({
+                "page_code": page.page_code,
+                "is_active": obj.is_active,
+                "created": created,
+            })
+
+        results.append({
+            "account_id": user.account_id,
+            "pages": page_results,
+        })
+
+    return Response({
+        "app_code": app.app_code,
+        "results": results,
+    })
+
+# get_check_page_access Swagger
+@extend_schema(
+    tags=["User Page Access"],
+    summary="Check page access for user (real-time)",
+    description="Real-time check whether a user can access a specific page in an application.",
+    parameters=[
+        OpenApiParameter("account_id", str, required=True),
+        OpenApiParameter("app_code", str, required=True),
+        OpenApiParameter("page_code", str, required=True),
+    ],
+    responses={200: None},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_check_page_access(request):
+    """
+    Response:
+        {
+          "account_id": "USER001",
+          "app_code": "INVENTORY",
+          "page_code": "PRODUCT",
+          "is_allowed": true,
+          "reason": "PAGE_ACCESS_GRANTED"
+        }
+    """
+    account_id = request.query_params.get("account_id")
+    app_code = request.query_params.get("app_code")
+    page_code = request.query_params.get("page_code")
+
+    user = UserAccounts.objects.get(account_id=account_id)
+    app = DmAppName.objects.get(app_code=app_code)
+    page = DmAppPageName.objects.get(page_code=page_code, app_code=app)
+
+    # Check app active
+    if not DmMappingAccountApp.objects.filter(
+        account_id=user,
+        app_code=app,
+        is_active=True
+    ).exists():
+        return Response({
+            "account_id": account_id,
+            "app_code": app_code,
+            "page_code": page_code,
+            "is_allowed": False,
+            "reason": "APP_DISABLED_FOR_USER"
+        })
+
+    # Check page active
+    if not DmMappingAccountAppPage.objects.filter(
+        account_id=user,
+        app_code=app,
+        page_code=page,
+        is_active=True
+    ).exists():
+        return Response({
+            "account_id": account_id,
+            "app_code": app_code,
+            "page_code": page_code,
+            "is_allowed": False,
+            "reason": "PAGE_DISABLED_FOR_USER"
+        })
+
+    # Get user roles
+    role_codes = DmMappingAccountRole.objects.filter(
+        account_id=user
+    ).values_list("role_code", flat=True)
+
+    if not role_codes:
+        return Response({
+            "account_id": account_id,
+            "app_code": app_code,
+            "page_code": page_code,
+            "is_allowed": False,
+            "reason": "NO_ROLE_ASSIGNED"
+        })
+
+    # Role permission
+    has_role_permission = DmMappingRolePermission.objects.filter(
+        role_code__in=role_codes,
+        app_code=app,
+        page_code=page,
+    ).exists()
+
+    if not has_role_permission:
+        return Response({
+            "account_id": account_id,
+            "app_code": app_code,
+            "page_code": page_code,
+            "is_allowed": False,
+            "reason": "NO_PERMISSION_ON_PAGE"
+        })
+
+    # Special permission override
+    special = DmMappingAccountSpecialPermission.objects.filter(
+        account_id=user,
+        page_code=page
+    ).first()
+
+    if special and not special.is_allowed:
+        return Response({
+            "account_id": account_id,
+            "app_code": app_code,
+            "page_code": page_code,
+            "is_allowed": False,
+            "reason": "REVOKED_BY_SPECIAL_PERMISSION"
+        })
+
+    return Response({
+        "account_id": account_id,
+        "app_code": app_code,
+        "page_code": page_code,
+        "is_allowed": True,
+        "reason": "PAGE_ACCESS_GRANTED"
+    })
+
+# post_bulk_assign_users_to_branch
+@extend_schema(
+    tags=["Branch Management"],
+    summary="Bulk assign users to a branch",
+    description="Assign multiple users to a branch with specific roles in one request.",
+    parameters=[
+        OpenApiParameter(
+            name="branch_code",
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="Branch code"
+        )
+    ],
+    request=BulkAssignUsersToBranchSerializer,
+    responses={200: None},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def post_bulk_assign_users_to_branch(request, branch_code):
+    """
+    Request:
+        {
+          "users": [
+            {
+              "account_id": "USER001",
+              "role_code": "MANAGER"
+            },
+            {
+              "account_id": "USER002",
+              "role_code": "STAFF"
+            },
+            {
+              "account_id": "USER003",
+              "role_code": "STAFF"
+            }
+          ]
+        }
+    Responses:
+        {
+          "branch_code": "BR_HN_01",
+          "results": [
+            {
+              "account_id": "USER001",
+              "role_code": "MANAGER",
+              "created": true
+            },
+            {
+              "account_id": "USER002",
+              "role_code": "STAFF",
+              "created": true
+            },
+            {
+              "account_id": "USER003",
+              "role_code": "STAFF",
+              "created": false
+            }
+          ]
+        }
+    """
+    serializer = BulkAssignUsersToBranchSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    branch = DmBranch.objects.get(branch_code=branch_code)
+
+    results = []
+
+    for item in serializer.validated_data["users"]:
+        user = UserAccounts.objects.get(account_id=item["account_id"])
+        role = DmRoles.objects.get(role_code=item["role_code"])
+
+        obj, created = DmMappingAccountBranch.objects.get_or_create(
+            account_id=user,
+            branch_code=branch,
+            role_code=role,
+        )
+
+        results.append({
+            "account_id": user.account_id,
+            "role_code": role.role_code,
+            "created": created,
+        })
+
+    return Response({
+        "branch_code": branch.branch_code,
+        "results": results,
+    })
+
+# delete_bulk_remove_users_from_branch Swagger
+@extend_schema(
+    tags=["Branch Management"],
+    summary="Bulk remove users from a branch",
+    description="Remove multiple users from a branch in one request.",
+    parameters=[
+        OpenApiParameter(
+            name="branch_code",
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="Branch code"
+        )
+    ],
+    request=BulkRemoveUsersFromBranchSerializer,
+    responses={200: None},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def post_bulk_remove_users_from_branch(request, branch_code):
+    """
+    Request:
+        {
+          "users": [
+            {
+              "account_id": "USER001",
+              "role_code": "MANAGER"
+            },
+            {
+              "account_id": "USER002",
+              "role_code": "STAFF"
+            }
+          ]
+        }
+    Responses:
+        {
+          "branch_code": "BR_HN_01",
+          "removed": [
+            {
+              "account_id": "USER001",
+              "role_code": "MANAGER"
+            },
+            {
+              "account_id": "USER002",
+              "role_code": "STAFF"
+            }
+          ],
+          "not_found": [
+            {
+              "account_id": "USER003",
+              "role_code": "STAFF"
+            }
+          ]
+        }
+    """
+    serializer = BulkRemoveUsersFromBranchSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    branch = DmBranch.objects.get(branch_code=branch_code)
+
+    removed = []
+    not_found = []
+
+    for item in serializer.validated_data["users"]:
+        try:
+            user = UserAccounts.objects.get(account_id=item["account_id"])
+            role = DmRoles.objects.get(role_code=item["role_code"])
+
+            deleted, _ = DmMappingAccountBranch.objects.filter(
+                account_id=user,
+                branch_code=branch,
+                role_code=role,
+            ).delete()
+
+            if deleted:
+                removed.append({
+                    "account_id": user.account_id,
+                    "role_code": role.role_code,
+                })
+            else:
+                not_found.append(item)
+
+        except (UserAccounts.DoesNotExist, DmRoles.DoesNotExist):
+            not_found.append(item)
+
+    return Response({
+        "branch_code": branch.branch_code,
+        "removed": removed,
+        "not_found": not_found,
+    })
+
+# delete_remove_user_from_branch Swagger
+@extend_schema(
+    tags=["Branch Management"],
+    summary="Remove user from branch",
+    description="Remove a user from a branch (all roles in that branch will be removed).",
+    parameters=[
+        OpenApiParameter(
+            name="branch_code",
+            location=OpenApiParameter.PATH,
+            required=True,
+        ),
+        OpenApiParameter(
+            name="account_id",
+            location=OpenApiParameter.PATH,
+            required=True,
+        ),
+    ],
+    responses={200: None},
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_remove_user_from_branch(request, branch_code, account_id):
+    """
+    Response:
+        {
+          "branch_code": "BR_HN_01",
+          "account_id": "USER001",
+          "deleted_count": 2         #deleted_count = number of roles of the user in the branch
+        }
+    """
+    branch = DmBranch.objects.get(branch_code=branch_code)
+    user = UserAccounts.objects.get(account_id=account_id)
+
+    deleted_count, _ = DmMappingAccountBranch.objects.filter(
+        branch_code=branch,
+        account_id=user,
+    ).delete()
+
+    return Response({
+        "branch_code": branch.branch_code,
+        "account_id": user.account_id,
+        "deleted_count": deleted_count,
+    })
+
+# patch_user_role_in_branch Swagger
+@extend_schema(
+    tags=["Branch Management"],
+    summary="Update user's role in branch",
+    description="Partially update user's role in a specific branch.",
+    parameters=[
+        OpenApiParameter("branch_code", str, OpenApiParameter.PATH),
+        OpenApiParameter("account_id", str, OpenApiParameter.PATH),
+    ],
+    request=PatchBranchUserRoleSerializer,
+)
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def patch_user_role_in_branch(request, branch_code, account_id):
+    """
+    Request:
+        {
+          "role_code": "MANAGER"
+        }
+    Response:
+        {
+          "branch_code": "BR_HN_01",
+          "account_id": "USER001",
+          "old_role": "STAFF",
+          "new_role": "MANAGER"
+        }
+    """
+    serializer = PatchBranchUserRoleSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    branch = DmBranch.objects.get(branch_code=branch_code)
+    user = UserAccounts.objects.get(account_id=account_id)
+    new_role = DmRoles.objects.get(role_code=serializer.validated_data["role_code"])
+
+    mapping_qs = DmMappingAccountBranch.objects.filter(
+        branch_code=branch,
+        account_id=user,
+    )
+
+    if not mapping_qs.exists():
+        return Response(
+            {"detail": "User is not assigned to this branch"},
+            status=400,
+        )
+
+    old_role = mapping_qs.first().role_code
+
+    # Replace role
+    mapping_qs.delete()
+    DmMappingAccountBranch.objects.create(
+        branch_code=branch,
+        account_id=user,
+        role_code=new_role,
+    )
+
+    return Response({
+        "branch_code": branch.branch_code,
+        "account_id": user.account_id,
+        "old_role": old_role.role_code,
+        "new_role": new_role.role_code,
+    })
+
+# patch_bulk_user_roles_in_branch Swagger
+@extend_schema(
+    tags=["Branch Management"],
+    summary="Bulk update user roles in branch",
+    description="Update role for multiple users in the same branch.",
+    parameters=[
+        OpenApiParameter("branch_code", str, OpenApiParameter.PATH),
+    ],
+    request=BulkPatchUserRoleSerializer,
+)
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def patch_bulk_user_roles_in_branch(request, branch_code):
+    """
+    Request:
+        {
+          "items": [
+            {
+              "account_id": "USER001",
+              "role_code": "MANAGER"
+            },
+            {
+              "account_id": "USER002",
+              "role_code": "STAFF"
+            }
+          ]
+        }
+    Responses:
+        {
+          "branch_code": "BR_HN_01",
+          "updated": [
+            {
+              "account_id": "USER001",
+              "old_role": "STAFF",
+              "new_role": "MANAGER"
+            },
+            {
+              "account_id": "USER002",
+              "old_role": "MANAGER",
+              "new_role": "STAFF"
+            }
+          ],
+          "errors": [
+            {
+              "account_id": "USER003",
+              "reason": "User not in branch"
+            }
+          ]
+        }
+    """
+    serializer = BulkPatchUserRoleSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    branch = DmBranch.objects.get(branch_code=branch_code)
+
+    updated = []
+    errors = []
+
+    for item in serializer.validated_data["items"]:
+        account_id = item["account_id"]
+        role_code = item["role_code"]
+
+        try:
+            user = UserAccounts.objects.get(account_id=account_id)
+            new_role = DmRoles.objects.get(role_code=role_code)
+
+            mapping_qs = DmMappingAccountBranch.objects.filter(
+                branch_code=branch,
+                account_id=user,
+            )
+
+            if not mapping_qs.exists():
+                errors.append({
+                    "account_id": account_id,
+                    "reason": "User not in branch"
+                })
+                continue
+
+            old_role = mapping_qs.first().role_code
+
+            # replace role
+            mapping_qs.delete()
+            DmMappingAccountBranch.objects.create(
+                branch_code=branch,
+                account_id=user,
+                role_code=new_role,
+            )
+
+            updated.append({
+                "account_id": account_id,
+                "old_role": old_role.role_code,
+                "new_role": new_role.role_code,
+            })
+
+        except UserAccounts.DoesNotExist:
+            errors.append({
+                "account_id": account_id,
+                "reason": "User not found"
+            })
+        except DmRoles.DoesNotExist:
+            errors.append({
+                "account_id": account_id,
+                "reason": f"Role {role_code} not found"
+            })
+
+    return Response({
+        "branch_code": branch.branch_code,
+        "updated": updated,
+        "errors": errors,
+    })
+
+# post_clone_role_permissions Swagger
+@extend_schema(
+    tags=["Clone Role Permission"],
+    summary="Clone permissions from one role to another",
+    description="""
+Clone all permissions from source role to target role.
+
+Modes:
+- append: only add missing permissions (default)
+- replace: remove all target permissions before cloning
+""",
+    parameters=[
+        OpenApiParameter(
+            name="source_role_code",
+            location=OpenApiParameter.PATH,
+            required=True,
+        ),
+        OpenApiParameter(
+            name="target_role_code",
+            location=OpenApiParameter.PATH,
+            required=True,
+        ),
+    ],
+    request=CloneRolePermissionSerializer,
+    responses={
+        200: OpenApiResponse(description="Clone result")
+    }
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_clone_role_permissions(request, source_role_code, target_role_code):
+    """
+    Request:
+        {
+          "mode": "append"
+        }
+    Response:
+        {
+          "source_role": "MANAGER",
+          "target_role": "MANAGER_HN",
+          "mode": "append",
+          "copied": 24,
+          "skipped": 3
+        }
+    """
+    serializer = CloneRolePermissionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    mode = serializer.validated_data["mode"]
+
+    source_role = DmRoles.objects.get(role_code=source_role_code)
+    target_role = DmRoles.objects.get(role_code=target_role_code)
+
+    source_qs = DmMappingRolePermission.objects.filter(
+        role_code=source_role
+    )
+
+    if mode == "replace":
+        DmMappingRolePermission.objects.filter(
+            role_code=target_role
+        ).delete()
+
+    existing = set(
+        DmMappingRolePermission.objects.filter(
+            role_code=target_role
+        ).values_list(
+            "app_code",
+            "page_code",
+            "permission_id",
+        )
+    )
+
+    to_create = []
+    skipped = 0
+
+    for perm in source_qs:
+        key = (perm.app_code_id, perm.page_code_id, perm.permission_id_id)
+        if key in existing:
+            skipped += 1
+            continue
+
+        to_create.append(
+            DmMappingRolePermission(
+                role_code=target_role,
+                app_code=perm.app_code,
+                page_code=perm.page_code,
+                permission_id=perm.permission_id,
+                created_by=request.user.id,
+            )
+        )
+
+    DmMappingRolePermission.objects.bulk_create(to_create)
+
+    return Response({
+        "source_role": source_role_code,
+        "target_role": target_role_code,
+        "mode": mode,
+        "copied": len(to_create),
+        "skipped": skipped,
+    })
+
+# post_clone_account_special_permissions Swagger
+@extend_schema(
+    tags=["Clone Role Permission"],
+    summary="Clone special permissions from one account to others",
+    description="""
+    Clone all account-level special permissions from a source account
+    to one or more target accounts.
+
+    - account_id is STRING
+    - Does not override existing permissions by default
+    - Atomic transaction
+    """,
+    request=CloneAccountSpecialPermissionSerializer,
+    responses={
+        200: {
+            "example": {
+                "source_account_id": "A001",
+                "targets": [
+                    {
+                        "account_id": "A002",
+                        "special_permissions_cloned": 7
+                    }
+                ]
+            }
+        }
+    },
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_clone_account_special_permissions(request, source_account_id):
+    """
+    Request:
+        {
+          "target_account_ids": ["A002", "A003"],
+          "replace_existing": false
+        }
+    Response:
+        {
+          "source_account_id": "A001",
+          "targets": [
+            {
+              "account_id": "A002",
+              "special_permissions_cloned": 7
+            },
+            {
+              "account_id": "A003",
+              "special_permissions_cloned": 7
+            }
+          ]
+        }
+    """
+    serializer = CloneAccountSpecialPermissionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    target_account_ids = serializer.validated_data["target_account_ids"]
+    replace_existing = serializer.validated_data["replace_existing"]
+
+    # Validate source account (account_id is string)
+    source_account = get_object_or_404(
+        UserAccounts, account_id=source_account_id
+    )
+
+    source_permissions = DmMappingAccountSpecialPermission.objects.filter(
+        account_id=source_account
+    )
+
+    if not source_permissions.exists():
+        return Response(
+            {"detail": "Source account has no special permissions"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    results = []
+
+    with transaction.atomic():
+        for target_id in target_account_ids:
+
+            target_account = get_object_or_404(
+                UserAccounts, account_id=target_id
+            )
+
+            cloned_count = 0
+            bulk_create = []
+
+            for sp in source_permissions:
+
+                qs = DmMappingAccountSpecialPermission.objects.filter(
+                    account_id=target_account,
+                    page_code=sp.page_code,
+                    permission_id=sp.permission_id,
+                )
+
+                if qs.exists():
+                    if replace_existing:
+                        qs.update(
+                            is_allowed=sp.is_allowed,
+                            updated_by=request.user.id,
+                        )
+                    continue
+
+                bulk_create.append(
+                    DmMappingAccountSpecialPermission(
+                        account_id=target_account,
+                        page_code=sp.page_code,
+                        permission_id=sp.permission_id,
+                        is_allowed=sp.is_allowed,
+                        created_by=request.user.id,
+                    )
+                )
+                cloned_count += 1
+
+            DmMappingAccountSpecialPermission.objects.bulk_create(bulk_create)
+
+            results.append(
+                {
+                    "account_id": target_id,
+                    "special_permissions_cloned": cloned_count,
+                }
+            )
+
+    return Response(
+        {
+            "source_account_id": source_account_id,
+            "targets": results,
+        },
+        status=status.HTTP_200_OK,
+    )

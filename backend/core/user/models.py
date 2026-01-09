@@ -1,6 +1,7 @@
 from django.db import models, transaction
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password, make_password
+# from core.data_model.models import *
 
 class UserStatus(models.Model):
     status_id = models.AutoField(primary_key=True)
@@ -49,6 +50,18 @@ class UserAccounts(models.Model):
     def update_last_login(self):
         self.last_login = timezone.now()
         self.save(update_fields=['account_last_login'])
+
+    def has_permission(self, app_code, page_code, permission_name):
+        from core.data_model.models import DmMappingRolePermission
+
+        role_qs = self.dmmappingaccountrole_set.values('role_code')
+
+        return DmMappingRolePermission.objects.filter(
+            role_code__in=role_qs,
+            app_code__app_code=app_code,
+            page_code__page_code=page_code,
+            permission_id__permission_name=permission_name
+        ).exists()
 
     @transaction.atomic
     def update_account_safe(self, updated_by=None, **kwargs):

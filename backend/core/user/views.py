@@ -5,9 +5,11 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from django.db import transaction
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from django.shortcuts import get_object_or_404
 
 from .models import UserAccounts, UserCustomUsers
 from .serializers import *
+from .permissions import *
 # from .tokens import get_tokens_for_user
 from .utils import get_tokens_for_user, verify_refresh_token, generate_access_token
 
@@ -17,29 +19,30 @@ from .utils import get_tokens_for_user, verify_refresh_token, generate_access_to
     tags=["User"]
 )
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])#, CanViewUser
 def get_user_list(request):
     """
     Get list of all users except the current logged-in user.
     Response:
-#     [
-#         {
-#             "id": 1,
-#             "user_id": "USER001",
-#             "user_name": "johndoe",
-#             "user_full_name": "John Doe",
-#             "user_email": "john@example.com",
-#             "user_status_name": "Active",
-#             "has_account": true,
-#             "account": {
-#                 "account_id": "john.doe",
-#                 "account_last_login": "2023-12-01T10:00:00Z",
-#                 "created_at": "2023-01-01T09:00:00Z"
-#             },
-#             "created_at": "2023-01-01T09:00:00Z",
-#             "updated_at": "2023-12-01T10:00:00Z"
-#         }
-#     ]
+    [
+        {
+            "id": 1,
+            "user_id": "USER001",
+            "user_name": "johndoe",
+            "user_full_name": "John Doe",
+            "user_email": "john@example.com",
+            "user_status_id": 1,
+            "user_status_name": "Active",
+            "has_account": true,
+            "account": {
+                "account_id": "john.doe",
+                "account_last_login": "2023-12-01T10:00:00Z",
+                "created_at": "2023-01-01T09:00:00Z"
+            },
+            "created_at": "2023-01-01T09:00:00Z",
+            "updated_at": "2023-12-01T10:00:00Z"
+        }
+    ]
     """
     try:
         current_user = request.user  # UserCustomUsers
@@ -515,66 +518,125 @@ def post_change_account_password(request):
         status=status.HTTP_200_OK
     )
 
-# patch_user_account Swagger
+# # patch_user_account Swagger
+# @extend_schema(
+#     tags=["User"],
+#     request=UpdateUserAccountSerializer,
+#     responses={
+#         200: {
+#             "type": "object",
+#             "properties": {
+#                 "message": {"type": "string", "example": "Account updated successfully"}
+#             }
+#         },
+#         400: {
+#             "type": "object",
+#             "properties": {
+#                 "account_password": {"type": "array", "items": {"type": "string"}},
+#                 "account_last_login": {"type": "array", "items": {"type": "string"}},
+#                 "account_token_version": {"type": "array", "items": {"type": "string"}}
+#             },
+#             "example": {
+#                 "account_password": ["This field may not be blank."],
+#             }
+#         },
+#         404: {
+#             "type": "object",
+#             "properties": {
+#                 "error": {"type": "string", "example": "Account not found"}
+#             }
+#         }
+#     },
+#     description="Update safe fields of UserAccount: password, token_version, last_login. account_id is not updated to prevent FK errors."
+# )
+# @api_view(['PATCH'])
+# @permission_classes([IsAuthenticated])
+# def patch_user_account(request, account_id):
+#     """
+#     Safely update a UserAccount by account_id.
+#     Path Parameters:
+#         account_id (string): ID of the UserAccount to be updated.
+#     Request Body (partial):
+#         {
+#             "account_password": "string",
+#             "account_last_login": "YYYY-MM-DDTHH:MM:SSZ",
+#             "account_token_version": "integer"
+#         }
+#     Responses:
+#         200 OK:
+#             Account updated successfully.
+#             {
+#                 "message": "Account updated successfully"
+#             }
+#     """
+#     try:
+#         account = UserAccounts.objects.get(account_id=account_id)
+#     except UserAccounts.DoesNotExist:
+#         return Response({"error": "Account not found"}, status=404)
+#
+#     serializer = UpdateUserAccountSerializer(account, data=request.data, partial=True, context={'request': request})
+#     if serializer.is_valid():
+#         serializer.save()
+#         return Response({"message": "Account updated successfully"}, status=status.HTTP_200_OK)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# patch_account_id Swagger
 @extend_schema(
     tags=["User"],
-    request=UpdateUserAccountSerializer,
+    request=UpdateAccountIdSerializer,
     responses={
         200: {
             "type": "object",
             "properties": {
-                "message": {"type": "string", "example": "Account updated successfully"}
+                "message": {
+                    "type": "string",
+                    "example": "Account ID updated successfully"
+                }
             }
         },
         400: {
             "type": "object",
-            "properties": {
-                "account_password": {"type": "array", "items": {"type": "string"}},
-                "account_last_login": {"type": "array", "items": {"type": "string"}},
-                "account_token_version": {"type": "array", "items": {"type": "string"}}
-            },
             "example": {
-                "account_password": ["This field may not be blank."],
+                "account_id": ["account_id already exists"]
             }
         },
         404: {
             "type": "object",
-            "properties": {
-                "error": {"type": "string", "example": "Account not found"}
+            "example": {
+                "error": "Account not found"
             }
         }
     },
-    description="Update safe fields of UserAccount: password, token_version, last_login. account_id is not updated to prevent FK errors."
+    description="Update ONLY account_id of a UserAccount. No other fields are modified."
 )
-@api_view(['PATCH'])
+@api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
-def patch_user_account(request, account_id):
+def patch_account_id(request, user_id):
     """
-    Safely update a UserAccount by account_id.
-    Path Parameters:
-        account_id (string): ID of the UserAccount to be updated.
-    Request Body (partial):
-        {
-            "account_password": "string",
-            "account_last_login": "YYYY-MM-DDTHH:MM:SSZ",
-            "account_token_version": "integer"
-        }
-    Responses:
-        200 OK:
-            Account updated successfully.
-            {
-                "message": "Account updated successfully"
-            }
+    Update account_id only by user_id.
     """
-    try:
-        account = UserAccounts.objects.get(account_id=account_id)
-    except UserAccounts.DoesNotExist:
-        return Response({"error": "Account not found"}, status=404)
 
-    serializer = UpdateUserAccountSerializer(account, data=request.data, partial=True, context={'request': request})
+    try:
+        account = UserAccounts.objects.get(user_id=user_id)
+    except UserAccounts.DoesNotExist:
+        return Response(
+            {"error": "Account not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = UpdateAccountIdSerializer(
+        account,
+        data=request.data,
+        context={"request": request}
+    )
+
     if serializer.is_valid():
         serializer.save()
-        return Response({"message": "Account updated successfully"}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Account ID updated successfully"},
+            status=status.HTTP_200_OK
+        )
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # delete_user_account Swagger
@@ -665,4 +727,180 @@ def patch_user_custom_user(request, user_id):
     if serializer.is_valid():
         serializer.save()
         return Response({"message": "UserCustomUser updated successfully"}, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# get_user_by_user_id Swagger
+@extend_schema(
+    tags=["User"],
+    summary="Get user by user_id",
+    description=(
+        "Retrieve user detail by unique user_id.\n\n"
+        "- `user_status_name`: status name from UserStatus table\n"
+        "- `has_account`: indicates whether the user has a linked account\n"
+        "- `account`: account information if exists, otherwise null"
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="user_id",
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="Unique user identifier"
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=GetUserListSerializer,
+            description="User retrieved successfully"
+        ),
+        404: OpenApiResponse(description="User not found"),
+        401: OpenApiResponse(description="Unauthorized"),
+        403: OpenApiResponse(description="Permission denied"),
+    },
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_by_user_id(request, user_id):
+    """
+    Get user detail by user_id.
+    Response:
+        {
+          "id": 2,
+          "user_id": "USER002",
+          "user_name": "janedoe",
+          "user_full_name": "Jane Doe",
+          "user_email": "jane@example.com",
+          "user_status_name": "Active",
+          "has_account": true,
+          "account": {
+            "account_id": "jane.doe",
+            "account_last_login": "2023-12-01T10:00:00Z",
+            "created_at": "2023-01-01T09:00:00Z"
+          },
+          "created_at": "2023-01-01T09:00:00Z",
+          "updated_at": "2023-12-01T10:00:00Z"
+        }
+    """
+    user = get_object_or_404(
+        UserCustomUsers.objects.select_related(
+            "user_account",
+            "user_status"
+        ),
+        user_id=user_id
+    )
+
+    serializer = GetUserListSerializer(user)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+# get_user_status_list Swagger
+@extend_schema(
+    tags=["User"],
+    summary="Get user status list",
+    description="Retrieve list of all user statuses.",
+    responses={
+        200: OpenApiResponse(
+            response=UserStatusSerializer(many=True),
+            description="List of user statuses"
+        ),
+        401: OpenApiResponse(description="Unauthorized"),
+    },
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_status_list(request):
+    """
+    Get list of user statuses.
+    Responses:
+        [
+          {
+            "status_id": 1,
+            "status_name": "System",
+            "created_at": "2023-01-01T09:00:00Z",
+            "created_by": 1,
+            "updated_at": "2023-12-01T10:00:00Z",
+            "updated_by": 1
+          },
+          {
+            "status_id": 2,
+            "status_name": "Active",
+            "created_at": "2023-01-01T09:00:00Z",
+            "created_by": 1,
+            "updated_at": "2023-12-01T10:00:00Z",
+            "updated_by": 1
+          }
+        ]
+    """
+    statuses = UserStatus.objects.all().order_by("status_id")
+    serializer = UserStatusSerializer(statuses, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+# post_update_account_by_user_id Swagger
+@extend_schema(
+    tags=["User"],
+    request=UpdateAccountByUserIdSerializer,
+    responses={
+        200: {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Account updated successfully"
+                }
+            }
+        },
+        400: {
+            "type": "object",
+            "example": {
+                "account_id": ["This field must be unique."]
+            }
+        },
+        404: {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Account not found for this user_id"
+                }
+            }
+        }
+    },
+    description="Update account_id and/or password by user_id."
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def post_update_account_by_user_id(request, user_id):
+    """
+    Update account_id and/or password by user_id.
+
+    Path params:
+        user_id (string)
+
+    Request body (partial):
+    {
+        "account_id": "new.username",
+        "account_password": "new_password"
+    }
+    """
+    try:
+        account = UserAccounts.objects.get(user_id=user_id)
+    except UserAccounts.DoesNotExist:
+        return Response(
+            {"error": "Account not found for this user_id"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = UpdateAccountByUserIdSerializer(
+        account,
+        data=request.data,
+        partial=True,
+        context={'request': request}
+    )
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(
+            {"message": "Account updated successfully"},
+            status=status.HTTP_200_OK
+        )
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

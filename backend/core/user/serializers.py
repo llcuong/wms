@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserCustomUsers, UserStatus
+from .models import UserCustomUsers, UserStatus, UserAccounts
 
 
 class PostLoginAccountSerializer(serializers.Serializer):
@@ -66,6 +66,7 @@ class GetUserListSerializer(serializers.ModelSerializer):
             'user_name',
             'user_full_name',
             'user_email',
+            "user_status_id",
             'user_status_name',
             'has_account',
             'account',
@@ -100,36 +101,108 @@ class ChangeAccountPasswordSerializer(serializers.Serializer):
             )
         return attrs
 
-class UpdateUserAccountSerializer(serializers.Serializer):
-    """
-    Serializer PATCH UserAccounts.
-    """
-    account_password = serializers.CharField(write_only=True, required=False)
-    account_last_login = serializers.DateTimeField(required=False)
-    account_token_version = serializers.IntegerField(required=False)
+class UpdateAccountIdSerializer(serializers.Serializer):
+    account_id = serializers.CharField(max_length=255)
+
+    def validate_account_id(self, value):
+        if UserAccounts.objects.filter(account_id=value).exists():
+            raise serializers.ValidationError("account_id already exists")
+        return value
 
     def update(self, instance, validated_data):
-        updated_by = self.context.get('request').user.id if self.context.get('request') else None
-        return instance.update_account_safe(updated_by=updated_by, **validated_data)
+        request = self.context.get("request")
+        instance.account_id = validated_data["account_id"]
+        instance.updated_by = request.user.id if request else None
+        instance.save(update_fields=["account_id", "updated_by", "updated_at"])
+        return instance
 
+
+# class UpdateUserCustomUserSerializer(serializers.ModelSerializer):
+#     """
+#     Serializer for updating UserCustomUsers.
+#     """
+#     class Meta:
+#         model = UserCustomUsers
+#         fields = [
+#             'user_name',
+#             'user_full_name',
+#             'user_email',
+#             'user_status',
+#         ]
+#         extra_kwargs = {
+#             'user_name': {'required': False},
+#             'user_full_name': {'required': False},
+#             'user_email': {'required': False},
+#             'user_status': {'required': False},
+#         }
 
 class UpdateUserCustomUserSerializer(serializers.ModelSerializer):
     """
     Serializer for updating UserCustomUsers.
     """
+
+    user_status_id = serializers.PrimaryKeyRelatedField(
+        source="user_status",
+        queryset=UserStatus.objects.all(),
+        required=False
+    )
+
     class Meta:
         model = UserCustomUsers
         fields = [
-            'user_name',
-            'user_full_name',
-            'user_email',
-            'user_status',
+            "user_name",
+            "user_full_name",
+            "user_email",
+            "user_status_id",
         ]
         extra_kwargs = {
-            'user_name': {'required': False},
-            'user_full_name': {'required': False},
-            'user_email': {'required': False},
-            'user_status': {'required': False},
+            "user_name": {"required": False},
+            "user_full_name": {"required": False},
+            "user_email": {"required": False},
         }
 
+class UserStatusSerializer(serializers.ModelSerializer):
+    """
+    Serializer for UserStatus.
+    """
 
+    class Meta:
+        model = UserStatus
+        fields = [
+            "status_id",
+            "status_name",
+            "created_at",
+            "created_by",
+            "updated_at",
+            "updated_by",
+        ]
+
+class UpdateAccountByUserIdSerializer(serializers.Serializer):
+    """
+    Update account_id and/or password by user_id.
+    """
+    account_id = serializers.CharField(required=False)
+    account_password = serializers.CharField(write_only=True, required=False)
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError(
+                "At least one field (account_id or account_password) is required."
+            )
+        return attrs
+
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+        updated_by = request.user.id if request and hasattr(request.user, 'id') else None
+
+        if 'account_id' in validated_data:
+            instance.account_id = validated_data['account_id']
+
+        if 'account_password' in validated_data:
+            instance.set_password(validated_data['account_password'])
+
+        if updated_by is not None:
+            instance.updated_by = updated_by
+
+        instance.save()
+        return instance
